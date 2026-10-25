@@ -1,0 +1,78 @@
+name: Bug report
+description: Something does not work as expected
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a bug. Please do not attach real exports or personal data.
+  - type: input
+    id: version
+    attributes:
+      label: Afterfeed version
+      description: Shown under Settings › About, or run `docker exec afterfeed afterfeed version`.
+      placeholder: v0.1.0
+    validations:
+      required: true
+  - type: dropdown
+    id: install
+    attributes:
+      label: Installation method
+      options:
+        - Docker CLI or Docker Compose
+        - Portainer
+        - Synology Container Manager
+        - QNAP Container Station
+        - TrueNAS
+        - Unraid
+        - Other
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Take-in or import
+        - Today, years or search
+        - Map
+        - Messages
+        - Vault
+        - Metadata editor
+        - Account or two-factor authentication
+        - Installation or updating
+        - Other
+    validations:
+      required: true
+  - type: dropdown
+    id: source
+    attributes:
+      label: Platform of the export (if relevant)
+      options:
+        - Not relevant
+        - Facebook
+        - Instagram
+        - X
+        - Snapchat
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Go to …
+        2. Click …
+        3. See …
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect to happen?
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: Output of `docker logs afterfeed`. Remove any personal information first.
+      render: text

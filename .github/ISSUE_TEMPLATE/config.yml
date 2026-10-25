@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Documentation
+    url: https://rudyh0.github.io/Afterfeed/
+    about: Installation, configuration and export guides
+  - name: Security vulnerability
+    url: https://github.com/Rudyh0/Afterfeed/security/advisories/new
+    about: Report security issues privately

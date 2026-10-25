@@ -1,0 +1,28 @@
+# Build output
+/bin/
+/web/dist/
+/internal/web/dist/*
+!/internal/web/dist/.gitkeep
+
+# Dependencies
+node_modules/
+
+# Docs
+/docs/.vitepress/dist/
+/docs/.vitepress/cache/
+
+# Local development data. Never commit real exports.
+/dev-data/
+*.zip
+*.car
+
+# Editors and OS
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Test and coverage output
+coverage.out
+*.test
