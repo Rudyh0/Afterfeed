@@ -1,0 +1,11 @@
+.git
+.github
+bin
+dev-data
+docs
+**/node_modules
+web/public/fonts
+internal/web/dist/assets
+internal/web/dist/index.html
+*.zip
+*.car

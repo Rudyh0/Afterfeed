@@ -1,0 +1,30 @@
+# Example Compose file. Change the paths on the left side of the volumes to
+# folders on your server, then run `docker compose up -d`.
+services:
+  afterfeed:
+    image: afterfeed/afterfeed:latest
+    container_name: afterfeed
+    environment:
+      # The user and group that own the folders below on your server.
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Amsterdam
+      # Optional: previews of Word, Excel and PowerPoint files in messages.
+      # Requires the documents service below.
+      # - AFTERFEED_PREVIEW_URL=http://documents:3000
+    volumes:
+      # Database and settings.
+      - ./config:/config
+      # Your memories, messages and the import folder.
+      - ./data:/data
+      # Optional: thumbnails and previews on a fast disk. Safe to delete.
+      # - ./cache:/cache
+    ports:
+      - 8080:8080
+    restart: unless-stopped
+
+  # Optional document previews.
+  # documents:
+  #   image: gotenberg/gotenberg:8
+  #   container_name: afterfeed-documents
+  #   restart: unless-stopped
