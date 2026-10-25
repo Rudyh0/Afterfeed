@@ -12,6 +12,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/rudyh0/afterfeed/internal/auth"
 	"github.com/rudyh0/afterfeed/internal/config"
 	"github.com/rudyh0/afterfeed/internal/store"
 	"github.com/rudyh0/afterfeed/internal/version"
@@ -26,7 +27,9 @@ type Server struct {
 }
 
 // Deps are the services the API uses.
-type Deps struct{}
+type Deps struct {
+	Auth *auth.Service
+}
 
 // New creates a server.
 func New(cfg *config.Config, st *store.Store, deps Deps) *Server {
@@ -75,7 +78,9 @@ func (s *Server) Run(ctx context.Context) error {
 func (s *Server) routes() {
 	m := s.mux
 	m.HandleFunc("GET /api/health", s.handle(s.health))
-	m.HandleFunc("GET /api/state", s.handle(s.state))
+	m.HandleFunc("GET /api/state", s.handle(s.stateWithAuth))
+	s.authRoutes()
+	s.settingsRoutes()
 
 	m.HandleFunc("/api/", func(w http.ResponseWriter, r *http.Request) {
 		writeError(w, r, errNotFound())

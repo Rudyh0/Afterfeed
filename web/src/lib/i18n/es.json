@@ -400,7 +400,19 @@
     "about": "Acerca de",
     "version": "Versión",
     "documentation": "Documentación",
-    "saved": "Guardado"
+    "saved": "Guardado",
+    "username": "Nombre de usuario",
+    "recovery_left_one": "Queda {count} código de recuperación",
+    "recovery_left_other": "Quedan {count} códigos de recuperación",
+    "new_codes": "Nuevos códigos de recuperación",
+    "new_codes_confirm": "Introduce tu contraseña para sustituir tus códigos de recuperación. Los códigos antiguos dejarán de funcionar.",
+    "code_invalid": "Ese código no es correcto. Comprueba la hora de tu teléfono e inténtalo de nuevo.",
+    "theme_label": "Elegir un tema",
+    "map_default": "Predeterminado: OpenFreeMap",
+    "map_local_hint": "La URL del estilo de tu propio servidor de teselas, por ejemplo un estilo de Protomaps.",
+    "invalid_style_url": "Introduce una URL válida que empiece por https:// o http://",
+    "docs_link": "Leer la documentación",
+    "signed_in_as": "Sesión iniciada como {name}"
   },
   "new_memory": {
     "title": "Nuevo recuerdo",
@@ -410,7 +422,17 @@
     "time": "Hora",
     "location": "Ubicación",
     "save": "Guardar recuerdo",
-    "saving": "Guardando"
+    "saving": "Guardando",
+    "use_current_location": "Usar la ubicación actual",
+    "enter_location": "Escribir un lugar",
+    "locating": "Buscando tu ubicación",
+    "location_https_only": "Tu ubicación actual solo está disponible si abres Afterfeed por HTTPS.",
+    "location_denied": "El navegador no ha compartido tu ubicación.",
+    "location_from_photo": "Ubicación de la foto",
+    "current_location": "Ubicación actual",
+    "remove_media": "Quitar {name}",
+    "empty": "Añade una foto, un vídeo o algo de texto.",
+    "take_photo": "Hacer una foto"
   },
   "error": {
     "internal": "Algo ha salido mal.",

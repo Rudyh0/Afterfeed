@@ -400,7 +400,19 @@
     "about": "About",
     "version": "Version",
     "documentation": "Documentation",
-    "saved": "Saved"
+    "saved": "Saved",
+    "username": "Username",
+    "recovery_left_one": "{count} recovery code left",
+    "recovery_left_other": "{count} recovery codes left",
+    "new_codes": "New recovery codes",
+    "new_codes_confirm": "Enter your password to replace your recovery codes. The old codes stop working.",
+    "code_invalid": "That code is not correct. Check the time on your phone and try again.",
+    "theme_label": "Choose a theme",
+    "map_default": "Default: OpenFreeMap",
+    "map_local_hint": "The style URL of your own tile server, for example a Protomaps style.",
+    "invalid_style_url": "Enter a valid URL starting with https:// or http://",
+    "docs_link": "Read the documentation",
+    "signed_in_as": "Signed in as {name}"
   },
   "new_memory": {
     "title": "New memory",
@@ -410,7 +422,17 @@
     "time": "Time",
     "location": "Location",
     "save": "Save memory",
-    "saving": "Saving"
+    "saving": "Saving",
+    "use_current_location": "Use current location",
+    "enter_location": "Enter a place",
+    "locating": "Finding your location",
+    "location_https_only": "Your current location is only available when Afterfeed is opened over HTTPS.",
+    "location_denied": "The browser did not share your location.",
+    "location_from_photo": "Location from the photo",
+    "current_location": "Current location",
+    "remove_media": "Remove {name}",
+    "empty": "Add a photo, a video or some text.",
+    "take_photo": "Take a photo"
   },
   "error": {
     "internal": "Something went wrong.",

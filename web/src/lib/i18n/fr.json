@@ -400,7 +400,19 @@
     "about": "À propos",
     "version": "Version",
     "documentation": "Documentation",
-    "saved": "Enregistré"
+    "saved": "Enregistré",
+    "username": "Nom d’utilisateur",
+    "recovery_left_one": "{count} code de récupération restant",
+    "recovery_left_other": "{count} codes de récupération restants",
+    "new_codes": "Nouveaux codes de récupération",
+    "new_codes_confirm": "Saisissez votre mot de passe pour remplacer vos codes de récupération. Les anciens codes ne fonctionneront plus.",
+    "code_invalid": "Ce code est incorrect. Vérifiez l’heure de votre téléphone et réessayez.",
+    "theme_label": "Choisir un thème",
+    "map_default": "Par défaut : OpenFreeMap",
+    "map_local_hint": "L’URL du style de votre propre serveur de tuiles, par exemple un style Protomaps.",
+    "invalid_style_url": "Saisissez une URL valide commençant par https:// ou http://",
+    "docs_link": "Lire la documentation",
+    "signed_in_as": "Connecté en tant que {name}"
   },
   "new_memory": {
     "title": "Nouveau souvenir",
@@ -410,7 +422,17 @@
     "time": "Heure",
     "location": "Lieu",
     "save": "Enregistrer le souvenir",
-    "saving": "Enregistrement"
+    "saving": "Enregistrement",
+    "use_current_location": "Utiliser la position actuelle",
+    "enter_location": "Saisir un lieu",
+    "locating": "Recherche de votre position",
+    "location_https_only": "Votre position actuelle n’est disponible que si Afterfeed est ouvert en HTTPS.",
+    "location_denied": "Le navigateur n’a pas partagé votre position.",
+    "location_from_photo": "Lieu de la photo",
+    "current_location": "Position actuelle",
+    "remove_media": "Retirer {name}",
+    "empty": "Ajoutez une photo, une vidéo ou du texte.",
+    "take_photo": "Prendre une photo"
   },
   "error": {
     "internal": "Une erreur s’est produite.",

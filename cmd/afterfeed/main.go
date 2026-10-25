@@ -30,6 +30,7 @@ Commands:
   auth reset-password   Set a new temporary password for the account
   auth reset-vault-pin  Remove the vault PIN so a new one can be set
   index rebuild         Rebuild the database index from the data volume
+  backup <file>         Write a consistent copy of the database to a file
 
 Run commands inside the container, for example:
   docker exec -it afterfeed afterfeed auth reset-2fa
@@ -55,6 +56,8 @@ func main() {
 		err = authCommand(args)
 	case "index":
 		err = indexCommand(args)
+	case "backup":
+		err = backupCommand(args)
 	case "help", "--help", "-h":
 		fmt.Print(usage)
 	default:

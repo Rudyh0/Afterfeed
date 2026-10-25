@@ -104,14 +104,14 @@
 {:else if session.user?.must_change_password}
   <ChangePassword />
 {:else if resolved}
-  {@const Page = resolved.route.component ?? lazyPages[resolved.route.pattern]}
-  {#if resolved.route.bare}
-    {#if Page}<Page params={resolved.params} />{/if}
+  {@const Page = resolved?.route.component ?? lazyPages[resolved?.route.pattern ?? '']}
+  {#if resolved?.route.bare}
+    {#if Page}<Page params={resolved?.params ?? {}} />{/if}
   {:else}
-    <Shell bleed={resolved.route.bleed}>
+    <Shell bleed={resolved?.route.bleed}>
       {#if Page}
-        {#key resolved.route.pattern}
-          <Page params={resolved.params} />
+        {#key resolved?.route.pattern}
+          <Page params={resolved?.params ?? {}} />
         {/key}
       {:else}
         <p class="visually-hidden">{t('common.loading')}</p>

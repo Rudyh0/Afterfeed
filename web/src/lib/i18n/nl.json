@@ -400,7 +400,19 @@
     "about": "Over",
     "version": "Versie",
     "documentation": "Documentatie",
-    "saved": "Opgeslagen"
+    "saved": "Opgeslagen",
+    "username": "Gebruikersnaam",
+    "recovery_left_one": "Nog {count} herstelcode over",
+    "recovery_left_other": "Nog {count} herstelcodes over",
+    "new_codes": "Nieuwe herstelcodes",
+    "new_codes_confirm": "Voer je wachtwoord in om je herstelcodes te vervangen. De oude codes werken dan niet meer.",
+    "code_invalid": "Die code klopt niet. Controleer de tijd op je telefoon en probeer het opnieuw.",
+    "theme_label": "Kies een thema",
+    "map_default": "Standaard: OpenFreeMap",
+    "map_local_hint": "De stijl-URL van je eigen tegelserver, bijvoorbeeld een Protomaps-stijl.",
+    "invalid_style_url": "Vul een geldige URL in die begint met https:// of http://",
+    "docs_link": "Lees de documentatie",
+    "signed_in_as": "Ingelogd als {name}"
   },
   "new_memory": {
     "title": "Nieuwe herinnering",
@@ -410,7 +422,17 @@
     "time": "Tijd",
     "location": "Locatie",
     "save": "Herinnering opslaan",
-    "saving": "Opslaan"
+    "saving": "Opslaan",
+    "use_current_location": "Gebruik huidige locatie",
+    "enter_location": "Vul een plaats in",
+    "locating": "Locatie bepalen",
+    "location_https_only": "Je huidige locatie is alleen beschikbaar als je Afterfeed via HTTPS opent.",
+    "location_denied": "De browser heeft je locatie niet gedeeld.",
+    "location_from_photo": "Locatie uit de foto",
+    "current_location": "Huidige locatie",
+    "remove_media": "{name} verwijderen",
+    "empty": "Voeg een foto, een video of wat tekst toe.",
+    "take_photo": "Foto maken"
   },
   "error": {
     "internal": "Er ging iets mis.",
