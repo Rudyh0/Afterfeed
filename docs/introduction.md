@@ -1,0 +1,36 @@
+# What is Afterfeed?
+
+Afterfeed is a self-hosted archive for your social media memories. You request a data export from a platform, import it into Afterfeed, and keep looking back at your photos, videos, posts and messages after you close the account.
+
+Afterfeed is not a social network. It has no followers, likes, comments, sharing or notifications, and no algorithm. It shows your own memories, in order, when you ask for them.
+
+## What you get
+
+- **Today** shows everything from today's date in previous years. Arrows move to the previous or next day.
+- **Years** shows every year month by month.
+- **Search** finds memories by words, places, dates and seasons, such as "summer 2019" or "Lisbon".
+- **Map** shows where your memories happened.
+- **Messages** is a read-only archive of your conversations per platform, including voice messages and documents. Messages never appear in Today or Years.
+- **Vault** keeps memories and conversations out of every other view, behind a PIN.
+- **Metadata editor** fixes dates, times and locations for one memory or a selection. The original values are kept.
+- **Downloads** save a photo or video to your device with the date and location written into the file.
+- **New memories** can be added by you, for yourself.
+
+## Supported platforms
+
+| Platform | What Afterfeed imports |
+| --- | --- |
+| Facebook | Posts, photos, videos, check-ins and messages, including end-to-end encrypted chats |
+| Instagram | Posts, stories, reels and messages |
+| X | Posts, photos, videos and direct messages |
+| Snapchat | Memories and saved chats |
+
+## How it runs
+
+Afterfeed is a single Docker container with a built-in database. It needs no external services. Everything stays on your server, in a folder structure you can read without Afterfeed.
+
+Afterfeed is aimed at people who already run Docker, for example on a home server or a NAS. See [Install](/install/) to get started.
+
+## Languages
+
+The app is available in English, Dutch, French, German and Spanish. This documentation is in English.
