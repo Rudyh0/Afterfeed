@@ -100,6 +100,7 @@ CREATE TABLE memories (
     year         INTEGER NOT NULL,
     text         TEXT    NOT NULL DEFAULT '',
     link         TEXT    NOT NULL DEFAULT '',
+    album        TEXT    NOT NULL DEFAULT '',
     place_name   TEXT    NOT NULL DEFAULT '',
     lat          REAL,
     lon          REAL,
@@ -149,24 +150,24 @@ CREATE INDEX idx_media_dhash  ON media(dhash) WHERE dhash IS NOT NULL;
 
 -- Full-text search over memories, kept in sync with triggers.
 CREATE VIRTUAL TABLE memories_fts USING fts5(
-    text, place_name, city, region,
+    text, place_name, city, region, album,
     content = 'memories',
     content_rowid = 'rowid',
     tokenize = 'unicode61 remove_diacritics 2'
 );
 CREATE TRIGGER memories_ai AFTER INSERT ON memories BEGIN
-    INSERT INTO memories_fts(rowid, text, place_name, city, region)
-    VALUES (new.rowid, new.text, new.place_name, new.city, new.region);
+    INSERT INTO memories_fts(rowid, text, place_name, city, region, album)
+    VALUES (new.rowid, new.text, new.place_name, new.city, new.region, new.album);
 END;
 CREATE TRIGGER memories_ad AFTER DELETE ON memories BEGIN
-    INSERT INTO memories_fts(memories_fts, rowid, text, place_name, city, region)
-    VALUES ('delete', old.rowid, old.text, old.place_name, old.city, old.region);
+    INSERT INTO memories_fts(memories_fts, rowid, text, place_name, city, region, album)
+    VALUES ('delete', old.rowid, old.text, old.place_name, old.city, old.region, old.album);
 END;
-CREATE TRIGGER memories_au AFTER UPDATE OF text, place_name, city, region ON memories BEGIN
-    INSERT INTO memories_fts(memories_fts, rowid, text, place_name, city, region)
-    VALUES ('delete', old.rowid, old.text, old.place_name, old.city, old.region);
-    INSERT INTO memories_fts(rowid, text, place_name, city, region)
-    VALUES (new.rowid, new.text, new.place_name, new.city, new.region);
+CREATE TRIGGER memories_au AFTER UPDATE OF text, place_name, city, region, album ON memories BEGIN
+    INSERT INTO memories_fts(memories_fts, rowid, text, place_name, city, region, album)
+    VALUES ('delete', old.rowid, old.text, old.place_name, old.city, old.region, old.album);
+    INSERT INTO memories_fts(rowid, text, place_name, city, region, album)
+    VALUES (new.rowid, new.text, new.place_name, new.city, new.region, new.album);
 END;
 
 -- Precomputed counts per month, used by the year overview and the timeline.
