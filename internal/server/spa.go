@@ -1,6 +1,7 @@
 package server
 
 import (
+	"bytes"
 	"io/fs"
 	"net/http"
 	"path"
@@ -29,9 +30,12 @@ func spaHandler() http.Handler {
 		p := strings.TrimPrefix(path.Clean(r.URL.Path), "/")
 		if p != "" && p != "index.html" {
 			if fi, err := fs.Stat(files, p); err == nil && !fi.IsDir() {
-				if strings.HasPrefix(p, "assets/") {
+				switch {
+				case strings.HasPrefix(p, "assets/"):
 					w.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
-				} else {
+				case strings.HasPrefix(p, "fonts/"):
+					w.Header().Set("Cache-Control", "public, max-age=2592000")
+				default:
 					w.Header().Set("Cache-Control", "no-cache")
 				}
 				fileServer.ServeHTTP(w, r)
@@ -45,8 +49,23 @@ func spaHandler() http.Handler {
 		}
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		w.Header().Set("Cache-Control", "no-cache")
-		w.Write(index)
+		w.Write(personalize(index, r))
 	})
+}
+
+var locales = map[string]bool{"en": true, "nl": true, "fr": true, "de": true, "es": true}
+
+// personalize sets the theme and language on <html> from the visitor's
+// cookies, so the first paint already uses the right colors and language.
+func personalize(index []byte, r *http.Request) []byte {
+	out := index
+	if c, err := r.Cookie("af_theme"); err == nil && (c.Value == "light" || c.Value == "dark") {
+		out = bytes.Replace(out, []byte(`data-theme="system"`), []byte(`data-theme="`+c.Value+`"`), 1)
+	}
+	if c, err := r.Cookie("af_lang"); err == nil && locales[c.Value] {
+		out = bytes.Replace(out, []byte(`<html lang="en"`), []byte(`<html lang="`+c.Value+`"`), 1)
+	}
+	return out
 }
 
 const notBuiltPage = `<!doctype html><meta charset="utf-8"><title>Afterfeed</title>

@@ -1,0 +1,30 @@
+{
+  "name": "afterfeed-web",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "license": "AGPL-3.0-only",
+  "scripts": {
+    "fonts": "node scripts/copy-fonts.mjs",
+    "dev": "npm run fonts && vite",
+    "build": "npm run fonts && vite build",
+    "preview": "vite preview",
+    "check": "svelte-check --tsconfig ./tsconfig.app.json && tsc -p tsconfig.node.json",
+    "test": "node --test --experimental-strip-types tests/*.test.ts"
+  },
+  "devDependencies": {
+    "@sveltejs/vite-plugin-svelte": "^7.3.1",
+    "@tsconfig/svelte": "^5.0.8",
+    "@types/node": "^24.19.2",
+    "@types/qrcode": "^1.5.6",
+    "svelte": "^5.57.2",
+    "svelte-check": "^4.7.7",
+    "typescript": "~6.0.3",
+    "vite": "^8.3.4"
+  },
+  "dependencies": {
+    "@fontsource-variable/geist": "^5.3.0",
+    "maplibre-gl": "^6.16.0",
+    "qrcode": "^1.5.4"
+  }
+}

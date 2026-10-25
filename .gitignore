@@ -26,3 +26,6 @@ Thumbs.db
 # Test and coverage output
 coverage.out
 *.test
+
+# Copied from node_modules at build time
+/web/public/fonts/
