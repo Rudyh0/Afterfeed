@@ -48,34 +48,43 @@ CREATE TABLE attempts (
     last_failure_at TEXT
 );
 
--- One row per import run. An import can consist of several archive parts.
+-- One row per import. An import reads one export, which can consist of
+-- several archive parts (uploaded files or files in the import folder).
 CREATE TABLE imports (
     id          INTEGER PRIMARY KEY,
     platform    TEXT    NOT NULL,
     status      TEXT    NOT NULL,
-    origin      TEXT    NOT NULL,
-    files_json  TEXT    NOT NULL DEFAULT '[]',
+    phase       TEXT    NOT NULL DEFAULT '',
     progress    REAL    NOT NULL DEFAULT 0,
-    phase       TEXT,
+    files_json  TEXT    NOT NULL DEFAULT '[]',
+    force       INTEGER NOT NULL DEFAULT 0,
+    check_json  TEXT,
     report_json TEXT,
-    error       TEXT,
+    error       TEXT    NOT NULL DEFAULT '',
     created_at  TEXT    NOT NULL,
+    updated_at  TEXT    NOT NULL,
     started_at  TEXT,
     finished_at TEXT
 );
+CREATE INDEX idx_imports_status ON imports(status, id);
 
--- Uploads in progress. Files are written in chunks so an interrupted upload can
--- continue where it stopped.
+-- Browser uploads. Files are written in chunks so an interrupted upload can
+-- continue where it stopped. An upload is found again by name, size and
+-- modification time.
 CREATE TABLE uploads (
     id         TEXT    PRIMARY KEY,
     name       TEXT    NOT NULL,
     size       INTEGER NOT NULL,
+    modified   INTEGER NOT NULL DEFAULT 0,
     received   INTEGER NOT NULL DEFAULT 0,
-    platform   TEXT,
+    platform   TEXT    NOT NULL DEFAULT '',
+    detected   TEXT    NOT NULL DEFAULT '',
     status     TEXT    NOT NULL,
+    import_id  INTEGER,
     created_at TEXT    NOT NULL,
     updated_at TEXT    NOT NULL
 );
+CREATE INDEX idx_uploads_fingerprint ON uploads(name, size, modified);
 
 -- The index of memories. Every memory also has a memory.json file in its
 -- folder under /data/memories, which is the source of truth.
@@ -90,6 +99,7 @@ CREATE TABLE memories (
     month_day    TEXT    NOT NULL,
     year         INTEGER NOT NULL,
     text         TEXT    NOT NULL DEFAULT '',
+    link         TEXT    NOT NULL DEFAULT '',
     place_name   TEXT    NOT NULL DEFAULT '',
     lat          REAL,
     lon          REAL,
@@ -117,8 +127,11 @@ CREATE TABLE media (
     id          TEXT    PRIMARY KEY,
     memory_id   TEXT    NOT NULL REFERENCES memories(id) ON DELETE CASCADE,
     position    INTEGER NOT NULL,
+    media_key   TEXT    NOT NULL,
     kind        TEXT    NOT NULL,
     file        TEXT    NOT NULL,
+    overlay     TEXT    NOT NULL DEFAULT '',
+    text        TEXT    NOT NULL DEFAULT '',
     mime        TEXT    NOT NULL DEFAULT '',
     width       INTEGER NOT NULL DEFAULT 0,
     height      INTEGER NOT NULL DEFAULT 0,
@@ -167,34 +180,44 @@ CREATE TABLE month_stats (
     PRIMARY KEY (year, month)
 );
 
+-- Conversations and their messages. Every conversation also has a
+-- conversation.json file under /data/messages, which is the source of truth.
 CREATE TABLE conversations (
     id                TEXT    PRIMARY KEY,
     source_key        TEXT    NOT NULL UNIQUE,
+    merge_key         TEXT    NOT NULL DEFAULT '',
     platform          TEXT    NOT NULL,
     title             TEXT    NOT NULL,
     is_group          INTEGER NOT NULL DEFAULT 0,
     participants_json TEXT    NOT NULL DEFAULT '[]',
-    first_at          TEXT,
-    last_at           TEXT,
+    self_name         TEXT    NOT NULL DEFAULT '',
+    first_at          INTEGER,
+    last_at           INTEGER,
     last_text         TEXT    NOT NULL DEFAULT '',
     message_count     INTEGER NOT NULL DEFAULT 0,
+    file_count        INTEGER NOT NULL DEFAULT 0,
     vault             INTEGER NOT NULL DEFAULT 0,
     path              TEXT    NOT NULL,
     created_at        TEXT    NOT NULL,
     updated_at        TEXT    NOT NULL
 );
 CREATE INDEX idx_conversations_platform ON conversations(platform, last_at);
+CREATE INDEX idx_conversations_merge    ON conversations(platform, merge_key);
 
+-- sent_at is in milliseconds since 1970, because messages within one second
+-- must keep their order.
 CREATE TABLE messages (
     id               INTEGER PRIMARY KEY,
     conversation_id  TEXT    NOT NULL REFERENCES conversations(id) ON DELETE CASCADE,
     source_key       TEXT    NOT NULL UNIQUE,
     sender           TEXT    NOT NULL DEFAULT '',
     is_self          INTEGER NOT NULL DEFAULT 0,
-    sent_at          TEXT    NOT NULL,
+    sent_at          INTEGER NOT NULL,
     kind             TEXT    NOT NULL,
     text             TEXT    NOT NULL DEFAULT '',
-    attachments_json TEXT    NOT NULL DEFAULT '[]'
+    link             TEXT    NOT NULL DEFAULT '',
+    files_json       TEXT    NOT NULL DEFAULT '[]',
+    reactions_json   TEXT    NOT NULL DEFAULT '[]'
 );
 CREATE INDEX idx_messages_conversation ON messages(conversation_id, sent_at);
 
@@ -215,16 +238,19 @@ CREATE TRIGGER messages_au AFTER UPDATE OF text ON messages BEGIN
     INSERT INTO messages_fts(rowid, text) VALUES (new.id, new.text);
 END;
 
--- Attachments inside messages (photos, videos, voice messages, documents).
+-- Files in messages (photos, videos, voice messages, documents).
 CREATE TABLE message_files (
     id              TEXT    PRIMARY KEY,
     conversation_id TEXT    NOT NULL REFERENCES conversations(id) ON DELETE CASCADE,
+    message_key     TEXT    NOT NULL,
+    sent_at         INTEGER NOT NULL,
     kind            TEXT    NOT NULL,
     file            TEXT    NOT NULL,
     name            TEXT    NOT NULL DEFAULT '',
     mime            TEXT    NOT NULL DEFAULT '',
     size            INTEGER NOT NULL DEFAULT 0,
-    duration        REAL    NOT NULL DEFAULT 0,
-    pages           INTEGER NOT NULL DEFAULT 0
+    width           INTEGER NOT NULL DEFAULT 0,
+    height          INTEGER NOT NULL DEFAULT 0,
+    duration        REAL    NOT NULL DEFAULT 0
 );
-CREATE INDEX idx_message_files_conversation ON message_files(conversation_id);
+CREATE INDEX idx_message_files_conversation ON message_files(conversation_id, kind, sent_at);
