@@ -51,6 +51,8 @@ ADD --chmod=0644 --checksum=sha256:ced0e5e046a84c908a6aa7accbef9a232c4a5d9a82766
 ADD --chmod=0644 --checksum=sha256:19d219bbb6672c869d20a9636c6816a81eb9a71796cb93ebe0cb1530e2cdb22d ${TESSDATA}/deu.traineddata /usr/share/tessdata/deu.traineddata
 ADD --chmod=0644 --checksum=sha256:ced037562e8c80c13122dece28dd477d399af80911a28791a66a63ac1e3445ca ${TESSDATA}/fra.traineddata /usr/share/tessdata/fra.traineddata
 ADD --chmod=0644 --checksum=sha256:6f2e04d02774a18f01bed44b1111f2cd7f3ba7ac9dc4373cd3f898a40ea6b464 ${TESSDATA}/spa.traineddata /usr/share/tessdata/spa.traineddata
+# Fails the build when Tesseract cannot find the models.
+RUN for l in eng nld deu fra spa; do TESSDATA_PREFIX=/usr/share/tessdata tesseract --list-langs 2>&1 | grep -qx "$l" || exit 1; done
 COPY --from=server /out/afterfeed-server /usr/local/bin/afterfeed-server
 COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
 COPY docker/afterfeed.sh /usr/local/bin/afterfeed
