@@ -339,7 +339,8 @@
       "messages": "Nachrichten werden gelesen",
       "indexing": "Index wird aufgebaut",
       "done": "Fertig",
-      "failed": "Fehlgeschlagen"
+      "failed": "Fehlgeschlagen",
+      "opening": "Dateien öffnen"
     },
     "report_title": "Import abgeschlossen",
     "report_failed": "Der Import wurde angehalten",
@@ -352,7 +353,58 @@
     "keep_originals": "Bewahre die ursprünglichen Exportdateien auch außerhalb von Afterfeed auf.",
     "next_source": "Als Nächstes: {platform}",
     "finish": "Zu Afterfeed",
-    "add_another": "Weitere Quelle importieren"
+    "add_another": "Weitere Quelle importieren",
+    "guide_menu_note": "Menünamen ändern sich ab und zu. Wenn etwas anders aussieht, suche nach denselben Wörtern.",
+    "guide_ready_title": "Wenn der Export bereit ist",
+    "guide_keep": "Bewahre die heruntergeladenen Dateien auch nach dem Import außerhalb von Afterfeed auf.",
+    "upload_folder_title": "Importordner",
+    "upload_folder_body": "Für große Exporte: Kopiere die Dateien nach {path} auf deinem Server.",
+    "upload_folder_empty": "Keine Zip-Dateien oder Ordner in {path}.",
+    "refresh_folder": "Erneut prüfen",
+    "parts_title": "Dateien für diesen Import",
+    "parts_count_one": "{count} Datei, {size}",
+    "parts_count_other": "{count} Dateien, {size}",
+    "upload_done": "Hochgeladen",
+    "upload_resume_hint": "Füge dieselbe Datei erneut hinzu, um fortzufahren.",
+    "upload_failed": "Upload angehalten",
+    "in_folder": "Im Importordner",
+    "not_recognised": "Nicht als Export erkannt",
+    "looks_like": "Sieht aus wie ein {platform}-Export",
+    "no_space": "Nicht genug freier Speicher auf dem Server für diese Datei.",
+    "not_zip": "Nur Zip-Dateien können hochgeladen werden. Kopiere entpackte Ordner in den Importordner.",
+    "add_files": "Dateien hinzufügen",
+    "add_to_import": "Zum Import hinzufügen",
+    "missing_title": "Es fehlen Dateien",
+    "missing_body_one": "{count} Datei, auf die der Export verweist, ist nicht in den hinzugefügten Dateien. Wenn der Export weitere Teile hat, füge sie hinzu. Sonst importiere ohne sie.",
+    "missing_body_other": "{count} Dateien, auf die der Export verweist, sind nicht in den hinzugefügten Dateien. Wenn der Export weitere Teile hat, füge sie hinzu. Sonst importiere ohne sie.",
+    "import_without": "Ohne importieren",
+    "missing_examples": "Fehlende Dateien",
+    "found": "Im Export gefunden",
+    "error_empty": "Keine Beiträge, Fotos oder Chats in diesen Dateien gefunden. Prüfe, ob es ein {platform}-Export im JSON-Format ist.",
+    "error_html": "Dieser Export ist im HTML-Format. Fordere ihn erneut mit dem Format JSON an.",
+    "error_not_zip": "Eine der Dateien ist weder eine Zip-Datei noch ein Ordner.",
+    "error_file_gone": "Eine der Dateien ist nicht mehr auf dem Server. Füge sie erneut hinzu.",
+    "error_generic": "Beim Import ist ein Fehler aufgetreten. Das Serverprotokoll enthält die Details.",
+    "cancel_import": "Import abbrechen",
+    "cancelled_title": "Import abgebrochen",
+    "cancelled_body": "Bereits Importiertes bleibt erhalten. Ein erneuter Import derselben Dateien macht dort weiter, wo er aufgehört hat.",
+    "close_page": "Du kannst diese Seite schließen; der Import läuft auf dem Server weiter.",
+    "stat_new_memories": "Neue Erinnerungen",
+    "stat_photos": "Fotos",
+    "stat_videos": "Videos",
+    "stat_conversations": "Unterhaltungen",
+    "stat_messages": "Neue Nachrichten",
+    "report_year": "Jahr",
+    "report_problems_title": "Dateien, die nicht gelesen werden konnten",
+    "report_missing_one": "{count} Datei, auf die der Export verweist, war nicht in den Dateien",
+    "report_missing_other": "{count} Dateien, auf die der Export verweist, waren nicht in den Dateien",
+    "report_check_years": "Prüfe, ob jedes erwartete Jahr dabei ist, bevor du das Konto schließt.",
+    "done_title": "Einrichtung abgeschlossen",
+    "done_body": "Füge jederzeit Quellen über {action} im Menü hinzu.",
+    "imported_sources": "Importiert",
+    "upload_more": "Weitere Dateien hinzufügen",
+    "previews_left_one": "{count} Vorschau wird vorbereitet",
+    "previews_left_other": "{count} Vorschauen werden vorbereitet"
   },
   "settings": {
     "title": "Einstellungen",
@@ -439,5 +491,59 @@
     "network": "Keine Verbindung zum Server.",
     "not_found": "Diese Seite gibt es nicht.",
     "go_home": "Zu Heute"
+  },
+  "guide": {
+    "facebook": {
+      "intro": "Facebook nennt das **Deine Informationen herunterladen**. Es ist Teil der Meta-Kontenübersicht.",
+      "steps": [
+        "Öffne auf facebook.com das Menü unter deinem Profilbild und gehe zu **Einstellungen und Privatsphäre › Einstellungen**.",
+        "Öffne die **Kontenübersicht** und gehe zu **Deine Informationen und Berechtigungen › Deine Informationen herunterladen**.",
+        "Wähle **Informationen herunterladen oder übertragen** und dein **Facebook**-Profil.",
+        "Wähle **Alle verfügbaren Informationen** und dann **Auf Gerät herunterladen**.",
+        "Stelle **Zeitraum** auf **Gesamter Zeitraum**, **Format** auf **JSON** und **Medienqualität** auf **Hoch**.",
+        "Wähle **Dateien erstellen**."
+      ],
+      "ready": "Facebook schickt eine Benachrichtigung und eine E-Mail, wenn die Dateien bereit sind. Das dauert einige Stunden bis mehrere Tage. Lade jeden Teil unter **Deine Informationen herunterladen** herunter; die Links sind nur wenige Tage gültig.",
+      "extra_title": "Verschlüsselte Messenger-Chats",
+      "extra_body": "Ende-zu-Ende-verschlüsselte Chats sind nicht in diesem Export. Lade sie separat herunter:",
+      "extra_steps": [
+        "Wähle auf messenger.com dein Profilbild und gehe zu **Privatsphäre und Sicherheit › Ende-zu-Ende-verschlüsselte Chats › Nachrichtenspeicher**.",
+        "Wähle **Daten aus dem sicheren Speicher herunterladen** und bestätige mit deinem Passwort.",
+        "Lass die Seite geöffnet, bis die Datei **messages.zip** heruntergeladen ist. Füge sie zusammen mit den anderen Dateien hinzu."
+      ]
+    },
+    "instagram": {
+      "intro": "Instagram nutzt **Deine Informationen herunterladen** in der Meta-Kontenübersicht.",
+      "steps": [
+        "Öffne auf instagram.com **Mehr › Einstellungen**. Öffne in der App dein Profil und das Menü.",
+        "Öffne die **Kontenübersicht** und gehe zu **Deine Informationen und Berechtigungen › Deine Informationen herunterladen**.",
+        "Wähle **Informationen herunterladen oder übertragen** und dein **Instagram**-Profil.",
+        "Wähle **Alle verfügbaren Informationen** und dann **Auf Gerät herunterladen**.",
+        "Stelle **Zeitraum** auf **Gesamter Zeitraum**, **Format** auf **JSON** und **Medienqualität** auf **Hoch**.",
+        "Wähle **Dateien erstellen**."
+      ],
+      "ready": "Instagram schickt eine E-Mail, wenn die Dateien bereit sind, meist innerhalb eines Tages. Lade jeden Teil unter **Deine Informationen herunterladen** herunter; die Links sind nur wenige Tage gültig."
+    },
+    "x": {
+      "intro": "X nennt das **Ein Archiv deiner Daten herunterladen**. Das geht nur auf der Website.",
+      "steps": [
+        "Öffne auf x.com **Mehr › Einstellungen und Datenschutz**.",
+        "Gehe zu **Dein Account › Ein Archiv deiner Daten herunterladen**.",
+        "Bestätige dein Passwort und gib den Code ein, den X dir schickt.",
+        "Wähle **Archiv anfordern**."
+      ],
+      "ready": "X schickt eine Benachrichtigung, wenn das Archiv bereit ist, meist nach einem Tag oder länger. Geh zurück auf dieselbe Seite und wähle **Archiv herunterladen**. Große Archive bestehen aus mehreren Teilen; lade alle herunter."
+    },
+    "snapchat": {
+      "intro": "Snapchat nennt das **Meine Daten**. Erinnerungen sind nur dabei, wenn du sie einschaltest.",
+      "steps": [
+        "Gehe zu **accounts.snapchat.com** und melde dich an.",
+        "Wähle **Meine Daten**.",
+        "Schalte **Deine Erinnerungen exportieren** und **JSON-Dateien exportieren** ein und wähle alle anderen Kategorien aus.",
+        "Stelle den Zeitraum auf **Gesamter Zeitraum**.",
+        "Bestätige deine E-Mail-Adresse und wähle **Absenden**."
+      ],
+      "ready": "Snapchat schickt eine E-Mail, wenn der Export bereit ist. Das kann einen Tag oder länger dauern. Nutze den Link in der E-Mail oder geh zurück zu **Meine Daten › Exporte ansehen**. Exporte mit vielen Erinnerungen bestehen aus mehreren Zip-Dateien; lade alle herunter."
+    }
   }
 }

@@ -46,6 +46,7 @@ type storeSink struct {
 
 	mu     sync.Mutex
 	seen   map[string]bool
+	convs  map[string]bool
 	report Report
 	years  map[int]*YearReport
 	first  time.Time
@@ -66,6 +67,7 @@ func newStoreSink(parent context.Context, m *Manager, importID int64, platform s
 		memCh: make(chan *Memory, 32),
 		idxCh: make(chan prepared, 64),
 		seen:  map[string]bool{},
+		convs: map[string]bool{},
 		years: map[int]*YearReport{},
 	}
 	workers := min(4, max(2, runtime.NumCPU()/2))
@@ -592,9 +594,13 @@ func (s *storeSink) storeConversation(c *Conversation) error {
 		added++
 	}
 	s.mu.Lock()
-	s.report.Conversations++
-	if isNew {
-		s.report.NewConversations++
+	// Two exports of one chat (such as Messenger's encrypted download) count once.
+	if !s.convs[conv.ID] {
+		s.convs[conv.ID] = true
+		s.report.Conversations++
+		if isNew {
+			s.report.NewConversations++
+		}
 	}
 	s.report.Messages += added
 	s.mu.Unlock()

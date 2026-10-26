@@ -246,8 +246,8 @@ func TestFacebookImportWithParts(t *testing.T) {
 	if r.Photos != 3 || r.Videos != 1 {
 		t.Errorf("photos/videos = %d/%d, want 3/1", r.Photos, r.Videos)
 	}
-	if r.Conversations != 3 || r.NewConversations != 2 {
-		t.Errorf("conversations = %d new %d, want 3 and 2 (encrypted chat merged)", r.Conversations, r.NewConversations)
+	if r.Conversations != 2 || r.NewConversations != 2 {
+		t.Errorf("conversations = %d new %d, want 2 and 2 (encrypted chat merged)", r.Conversations, r.NewConversations)
 	}
 	if r.Messages != 6 {
 		t.Errorf("messages = %d, want 6 (one duplicate between exports)", r.Messages)

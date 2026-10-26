@@ -339,7 +339,8 @@
       "messages": "Berichten lezen",
       "indexing": "Index opbouwen",
       "done": "Klaar",
-      "failed": "Mislukt"
+      "failed": "Mislukt",
+      "opening": "Bestanden openen"
     },
     "report_title": "Import voltooid",
     "report_failed": "De import is gestopt",
@@ -352,7 +353,58 @@
     "keep_originals": "Bewaar de originele exportbestanden ook buiten Afterfeed.",
     "next_source": "Volgende: {platform}",
     "finish": "Naar Afterfeed",
-    "add_another": "Nog een bron importeren"
+    "add_another": "Nog een bron importeren",
+    "guide_menu_note": "Menunamen veranderen af en toe. Ziet iets er anders uit, zoek dan naar dezelfde woorden.",
+    "guide_ready_title": "Als de export klaar is",
+    "guide_keep": "Bewaar de gedownloade bestanden ook na het importeren ergens anders dan in Afterfeed.",
+    "upload_folder_title": "Importmap",
+    "upload_folder_body": "Voor grote exports: kopieer de bestanden naar {path} op je server.",
+    "upload_folder_empty": "Geen zip-bestanden of mappen in {path}.",
+    "refresh_folder": "Opnieuw kijken",
+    "parts_title": "Bestanden voor deze import",
+    "parts_count_one": "{count} bestand, {size}",
+    "parts_count_other": "{count} bestanden, {size}",
+    "upload_done": "Geüpload",
+    "upload_resume_hint": "Voeg hetzelfde bestand opnieuw toe om verder te gaan.",
+    "upload_failed": "Upload gestopt",
+    "in_folder": "In de importmap",
+    "not_recognised": "Niet herkend als export",
+    "looks_like": "Lijkt een {platform}-export",
+    "no_space": "Niet genoeg vrije ruimte op de server voor dit bestand.",
+    "not_zip": "Alleen zip-bestanden kunnen geüpload worden. Kopieer uitgepakte mappen naar de importmap.",
+    "add_files": "Bestanden toevoegen",
+    "add_to_import": "Aan import toevoegen",
+    "missing_title": "Er ontbreken bestanden",
+    "missing_body_one": "{count} bestand waar de export naar verwijst zit niet in de toegevoegde bestanden. Heeft de export meer delen, voeg die dan toe. Anders importeer je zonder.",
+    "missing_body_other": "{count} bestanden waar de export naar verwijst zitten niet in de toegevoegde bestanden. Heeft de export meer delen, voeg die dan toe. Anders importeer je zonder.",
+    "import_without": "Zonder importeren",
+    "missing_examples": "Ontbrekende bestanden",
+    "found": "Gevonden in de export",
+    "error_empty": "Geen posts, foto’s of chats gevonden in deze bestanden. Controleer of dit een {platform}-export in JSON-indeling is.",
+    "error_html": "Deze export is in HTML-indeling. Vraag hem opnieuw aan met JSON als indeling.",
+    "error_not_zip": "Een van de bestanden is geen zip-bestand of map.",
+    "error_file_gone": "Een van de bestanden staat niet meer op de server. Voeg het opnieuw toe.",
+    "error_generic": "Er ging iets mis tijdens het importeren. Het serverlog bevat de details.",
+    "cancel_import": "Import stoppen",
+    "cancelled_title": "Import gestopt",
+    "cancelled_body": "Wat al geïmporteerd is, blijft staan. Importeer dezelfde bestanden opnieuw om verder te gaan.",
+    "close_page": "Je kunt deze pagina sluiten; het importeren gaat door op de server.",
+    "stat_new_memories": "Nieuwe herinneringen",
+    "stat_photos": "Foto’s",
+    "stat_videos": "Video’s",
+    "stat_conversations": "Gesprekken",
+    "stat_messages": "Nieuwe berichten",
+    "report_year": "Jaar",
+    "report_problems_title": "Bestanden die niet gelezen konden worden",
+    "report_missing_one": "{count} bestand waar de export naar verwijst zat niet in de bestanden",
+    "report_missing_other": "{count} bestanden waar de export naar verwijst zaten niet in de bestanden",
+    "report_check_years": "Controleer of elk jaar dat je verwacht erbij staat voordat je het account sluit.",
+    "done_title": "Inrichting klaar",
+    "done_body": "Voeg op elk moment bronnen toe met {action} in het menu.",
+    "imported_sources": "Geïmporteerd",
+    "upload_more": "Meer bestanden toevoegen",
+    "previews_left_one": "{count} voorbeeld wordt voorbereid",
+    "previews_left_other": "{count} voorbeelden worden voorbereid"
   },
   "settings": {
     "title": "Instellingen",
@@ -439,5 +491,59 @@
     "network": "Geen verbinding met de server.",
     "not_found": "Deze pagina bestaat niet.",
     "go_home": "Naar Vandaag"
+  },
+  "guide": {
+    "facebook": {
+      "intro": "Facebook noemt dit **Je gegevens downloaden**. Het staat in het Accountcentrum van Meta.",
+      "steps": [
+        "Open op facebook.com het menu onder je profielfoto en ga naar **Instellingen en privacy › Instellingen**.",
+        "Open **Accountcentrum** en ga naar **Je gegevens en rechten › Je gegevens downloaden**.",
+        "Kies **Gegevens downloaden of overzetten** en selecteer je **Facebook**-profiel.",
+        "Kies **Alle beschikbare gegevens** en daarna **Downloaden naar apparaat**.",
+        "Zet **Datumbereik** op **Altijd**, **Indeling** op **JSON** en **Mediakwaliteit** op **Hoog**.",
+        "Kies **Bestanden maken**."
+      ],
+      "ready": "Facebook stuurt een melding en een e-mail als de bestanden klaar zijn. Dat duurt een paar uur tot enkele dagen. Download elk deel via **Je gegevens downloaden**; de links blijven maar een paar dagen geldig.",
+      "extra_title": "Versleutelde Messenger-chats",
+      "extra_body": "End-to-end versleutelde chats zitten niet in deze export. Download ze apart:",
+      "extra_steps": [
+        "Kies op messenger.com je profielfoto en ga naar **Privacy en veiligheid › End-to-end versleutelde chats › Berichtopslag**.",
+        "Kies **Gegevens van beveiligde opslag downloaden** en bevestig met je wachtwoord.",
+        "Laat de pagina open tot het bestand **messages.zip** gedownload is. Voeg het toe samen met de andere bestanden."
+      ]
+    },
+    "instagram": {
+      "intro": "Instagram gebruikt **Je gegevens downloaden** in het Accountcentrum van Meta.",
+      "steps": [
+        "Open op instagram.com **Meer › Instellingen**. Open in de app je profiel en het menu.",
+        "Open **Accountcentrum** en ga naar **Je gegevens en rechten › Je gegevens downloaden**.",
+        "Kies **Gegevens downloaden of overzetten** en selecteer je **Instagram**-profiel.",
+        "Kies **Alle beschikbare gegevens** en daarna **Downloaden naar apparaat**.",
+        "Zet **Datumbereik** op **Altijd**, **Indeling** op **JSON** en **Mediakwaliteit** op **Hoog**.",
+        "Kies **Bestanden maken**."
+      ],
+      "ready": "Instagram stuurt een e-mail als de bestanden klaar zijn, meestal binnen een dag. Download elk deel via **Je gegevens downloaden**; de links blijven maar een paar dagen geldig."
+    },
+    "x": {
+      "intro": "X noemt dit **Een archief van je gegevens downloaden**. Dat kan alleen op de website.",
+      "steps": [
+        "Open op x.com **Meer › Instellingen en privacy**.",
+        "Ga naar **Je account › Een archief van je gegevens downloaden**.",
+        "Bevestig je wachtwoord en vul de code in die X je stuurt.",
+        "Kies **Archief aanvragen**."
+      ],
+      "ready": "X stuurt een melding als het archief klaar is, meestal na een dag of langer. Ga terug naar dezelfde pagina en kies **Archief downloaden**. Grote archieven bestaan uit meerdere delen; download ze allemaal."
+    },
+    "snapchat": {
+      "intro": "Snapchat noemt dit **Mijn gegevens**. Memories zitten er alleen in als je ze aanzet.",
+      "steps": [
+        "Ga naar **accounts.snapchat.com** en log in.",
+        "Kies **Mijn gegevens**.",
+        "Zet **Je Memories exporteren** en **JSON-bestanden exporteren** aan, en selecteer alle andere categorieën.",
+        "Zet de periode op **Altijd**.",
+        "Bevestig je e-mailadres en kies **Verzenden**."
+      ],
+      "ready": "Snapchat stuurt een e-mail als de export klaar is. Dat kan een dag of langer duren. Gebruik de link in de e-mail of ga terug naar **Mijn gegevens › Exports bekijken**. Exports met veel Memories bestaan uit meerdere zip-bestanden; download ze allemaal."
+    }
   }
 }

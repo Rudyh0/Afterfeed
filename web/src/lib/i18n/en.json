@@ -339,7 +339,8 @@
       "messages": "Reading messages",
       "indexing": "Building the index",
       "done": "Done",
-      "failed": "Failed"
+      "failed": "Failed",
+      "opening": "Opening the files"
     },
     "report_title": "Import complete",
     "report_failed": "The import stopped",
@@ -352,7 +353,58 @@
     "keep_originals": "Keep the original export files somewhere other than Afterfeed.",
     "next_source": "Next: {platform}",
     "finish": "Go to Afterfeed",
-    "add_another": "Import another source"
+    "add_another": "Import another source",
+    "guide_menu_note": "Menu names change from time to time. If something looks different, look for the same words.",
+    "guide_ready_title": "When the export is ready",
+    "guide_keep": "Keep the downloaded files somewhere other than Afterfeed, also after the import.",
+    "upload_folder_title": "Import folder",
+    "upload_folder_body": "For large exports: copy the files to {path} on your server.",
+    "upload_folder_empty": "No zip files or folders in {path}.",
+    "refresh_folder": "Check again",
+    "parts_title": "Files for this import",
+    "parts_count_one": "{count} file, {size}",
+    "parts_count_other": "{count} files, {size}",
+    "upload_done": "Uploaded",
+    "upload_resume_hint": "Add the same file again to continue.",
+    "upload_failed": "Upload stopped",
+    "in_folder": "In the import folder",
+    "not_recognised": "Not recognised as an export",
+    "looks_like": "Looks like a {platform} export",
+    "no_space": "Not enough free space on the server for this file.",
+    "not_zip": "Only zip files can be uploaded. Copy extracted folders to the import folder.",
+    "add_files": "Add files",
+    "add_to_import": "Add to import",
+    "missing_title": "Files are missing",
+    "missing_body_one": "{count} file the export refers to is not in the added files. If the export has more parts, add them. Otherwise, import without it.",
+    "missing_body_other": "{count} files the export refers to are not in the added files. If the export has more parts, add them. Otherwise, import without them.",
+    "import_without": "Import without them",
+    "missing_examples": "Missing files",
+    "found": "Found in the export",
+    "error_empty": "No posts, photos or chats found in these files. Check that this is a {platform} export in JSON format.",
+    "error_html": "This export is in HTML format. Request it again with the format set to JSON.",
+    "error_not_zip": "One of the files is not a zip file or folder.",
+    "error_file_gone": "One of the files is no longer on the server. Add it again.",
+    "error_generic": "Something went wrong during the import. The server log has the details.",
+    "cancel_import": "Stop import",
+    "cancelled_title": "Import stopped",
+    "cancelled_body": "What was imported so far is kept. Importing the same files again continues where it stopped.",
+    "close_page": "You can close this page; the import continues on the server.",
+    "stat_new_memories": "New memories",
+    "stat_photos": "Photos",
+    "stat_videos": "Videos",
+    "stat_conversations": "Conversations",
+    "stat_messages": "New messages",
+    "report_year": "Year",
+    "report_problems_title": "Files that could not be read",
+    "report_missing_one": "{count} file the export refers to was not in the files",
+    "report_missing_other": "{count} files the export refers to were not in the files",
+    "report_check_years": "Check that every year you expect is there before you close the account.",
+    "done_title": "Set-up complete",
+    "done_body": "Add sources at any time with {action} in the menu.",
+    "imported_sources": "Imported",
+    "upload_more": "Add more files",
+    "previews_left_one": "Preparing {count} preview",
+    "previews_left_other": "Preparing {count} previews"
   },
   "settings": {
     "title": "Settings",
@@ -439,5 +491,59 @@
     "network": "No connection to the server.",
     "not_found": "This page does not exist.",
     "go_home": "Go to Today"
+  },
+  "guide": {
+    "facebook": {
+      "intro": "Facebook calls this **Download your information**. It is part of the Meta Accounts Center.",
+      "steps": [
+        "On facebook.com, open the menu under your profile picture and go to **Settings & privacy › Settings**.",
+        "Open **Accounts Center** and go to **Your information and permissions › Download your information**.",
+        "Choose **Download or transfer information** and select your **Facebook** profile.",
+        "Choose **All available information**, then **Download to device**.",
+        "Set **Date range** to **All time**, **Format** to **JSON** and **Media quality** to **High**.",
+        "Choose **Create files**."
+      ],
+      "ready": "Facebook sends a notification and an email when the files are ready, which takes from a few hours to several days. Download every part from **Download your information**; the links stay valid for a few days.",
+      "extra_title": "Encrypted Messenger chats",
+      "extra_body": "End-to-end encrypted chats are not in this export. Download them separately:",
+      "extra_steps": [
+        "On messenger.com, choose your profile picture and go to **Privacy & safety › End-to-end encrypted chats › Message storage**.",
+        "Choose **Download secure storage data** and confirm with your password.",
+        "Keep the page open until the file **messages.zip** downloads. Add it together with the other files."
+      ]
+    },
+    "instagram": {
+      "intro": "Instagram uses **Download your information** in the Meta Accounts Center.",
+      "steps": [
+        "On instagram.com, open **More › Settings**. In the app, open your profile and the menu.",
+        "Open **Accounts Center** and go to **Your information and permissions › Download your information**.",
+        "Choose **Download or transfer information** and select your **Instagram** profile.",
+        "Choose **All available information**, then **Download to device**.",
+        "Set **Date range** to **All time**, **Format** to **JSON** and **Media quality** to **High**.",
+        "Choose **Create files**."
+      ],
+      "ready": "Instagram sends an email when the files are ready, usually within a day. Download every part from **Download your information**; the links stay valid for a few days."
+    },
+    "x": {
+      "intro": "X calls this **Download an archive of your data**. It is only available on the website.",
+      "steps": [
+        "On x.com, open **More › Settings and privacy**.",
+        "Go to **Your account › Download an archive of your data**.",
+        "Confirm your password and enter the code X sends you.",
+        "Choose **Request archive**."
+      ],
+      "ready": "X sends a notification when the archive is ready, usually after a day or more. Go back to the same page and choose **Download archive**. Large archives come in several parts; download all of them."
+    },
+    "snapchat": {
+      "intro": "Snapchat calls this **My Data**. Memories are only included when you turn them on.",
+      "steps": [
+        "Go to **accounts.snapchat.com** and sign in.",
+        "Choose **My Data**.",
+        "Turn on **Export your Memories** and **Export JSON files**, and select every other category.",
+        "Set the date range to **All time**.",
+        "Confirm your email address and choose **Submit**."
+      ],
+      "ready": "Snapchat sends an email when the export is ready, which can take a day or longer. Use the link in the email or go back to **My Data › See exports**. Exports with many Memories come in several zip files; download all of them."
+    }
   }
 }

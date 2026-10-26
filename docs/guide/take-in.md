@@ -28,13 +28,15 @@ The instructions are also in this documentation:
 
 ## 4. Upload the export
 
-Platforms often split a large export into several zip files. Add all of them at once, in any order. Afterfeed recognises which parts belong together and shows how many it has, for example *3 of 5 parts*. The import starts when every part is there, because a photo and its metadata can be in different parts.
+Platforms often split a large export into several zip files. Add all of them, in any order. A photo and its date and description can be in different parts, so Afterfeed reads all parts together.
+
+Before it copies anything, Afterfeed checks that every photo, video and attachment the export refers to is in the files you added. When files are missing, it shows how many, with examples. Add the other parts of the export, or choose **Import without them**. Importing the same export again later, with the missing parts, adds the files to the memories that were already imported.
 
 Uploads continue where they stopped if the connection drops or you close the browser. For very large exports, copying the files to the import folder on your server is faster; see [Importing large exports](./large-exports).
 
 ## 5. The import
 
-Afterfeed unpacks the archive, reads the posts, copies the photos and videos, matches each file with its date, location and description, and prepares previews. You can close the browser while it runs.
+Afterfeed reads the posts, copies the photos and videos out of the zip files, matches each file with its date, location and description, and stores the chats. You can close the browser while it runs. Previews are prepared in the background afterwards.
 
 ## 6. The report
 

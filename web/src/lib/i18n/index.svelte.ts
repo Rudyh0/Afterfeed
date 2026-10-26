@@ -109,6 +109,20 @@ export function t(key: string, vars?: Vars): string {
   })
 }
 
+/** Returns the items of a list stored as numbered keys (prefix.0, prefix.1, ...). */
+export function tList(prefix: string): string[] {
+  const d = dicts[state.locale]
+  const src = d[`${prefix}.0`] !== undefined ? d : dicts.en
+  const out: string[] = []
+  for (let i = 0; src[`${prefix}.${i}`] !== undefined; i++) out.push(src[`${prefix}.${i}`])
+  return out
+}
+
+/** Reports whether a key exists in English, the base language. */
+export function hasKey(key: string): boolean {
+  return dicts.en[key] !== undefined || dicts.en[`${key}.0`] !== undefined
+}
+
 /** Returns every translation of a key, used to recognise words in any language. */
 export function allTranslations(key: string): string[] {
   const out = new Set<string>()

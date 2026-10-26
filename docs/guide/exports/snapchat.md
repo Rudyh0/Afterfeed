@@ -6,8 +6,8 @@ Snapchat calls this **My Data**. Make sure your Memories are included; they are 
 
 1. Go to **accounts.snapchat.com** and sign in.
 2. Choose **My Data**.
-3. Turn on **Export your Memories**, and select every other category.
-4. Choose **JSON** as the format, if asked, and the full date range.
+3. Turn on **Export your Memories** and **Export JSON files**, and select every other category.
+4. Set the date range to **All time**.
 5. Confirm your email address and click **Submit**.
 
 Snapchat sends you an email when the export is ready. That can take a day or longer.

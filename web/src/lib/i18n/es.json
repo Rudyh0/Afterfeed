@@ -339,7 +339,8 @@
       "messages": "Leyendo mensajes",
       "indexing": "Creando el índice",
       "done": "Listo",
-      "failed": "Error"
+      "failed": "Error",
+      "opening": "Abriendo los archivos"
     },
     "report_title": "Importación completada",
     "report_failed": "La importación se ha detenido",
@@ -352,7 +353,58 @@
     "keep_originals": "Guarda también los archivos de exportación originales fuera de Afterfeed.",
     "next_source": "Siguiente: {platform}",
     "finish": "Ir a Afterfeed",
-    "add_another": "Importar otra fuente"
+    "add_another": "Importar otra fuente",
+    "guide_menu_note": "Los nombres de los menús cambian de vez en cuando. Si algo se ve distinto, busca las mismas palabras.",
+    "guide_ready_title": "Cuando la exportación esté lista",
+    "guide_keep": "Guarda los archivos descargados fuera de Afterfeed, también después de importarlos.",
+    "upload_folder_title": "Carpeta de importación",
+    "upload_folder_body": "Para exportaciones grandes: copia los archivos a {path} en tu servidor.",
+    "upload_folder_empty": "No hay archivos zip ni carpetas en {path}.",
+    "refresh_folder": "Comprobar de nuevo",
+    "parts_title": "Archivos para esta importación",
+    "parts_count_one": "{count} archivo, {size}",
+    "parts_count_other": "{count} archivos, {size}",
+    "upload_done": "Subido",
+    "upload_resume_hint": "Vuelve a añadir el mismo archivo para continuar.",
+    "upload_failed": "Subida detenida",
+    "in_folder": "En la carpeta de importación",
+    "not_recognised": "No reconocido como exportación",
+    "looks_like": "Parece una exportación de {platform}",
+    "no_space": "No hay suficiente espacio libre en el servidor para este archivo.",
+    "not_zip": "Solo se pueden subir archivos zip. Copia las carpetas descomprimidas a la carpeta de importación.",
+    "add_files": "Añadir archivos",
+    "add_to_import": "Añadir a la importación",
+    "missing_title": "Faltan archivos",
+    "missing_body_one": "{count} archivo al que hace referencia la exportación no está en los archivos añadidos. Si la exportación tiene más partes, añádelas. Si no, importa sin él.",
+    "missing_body_other": "{count} archivos a los que hace referencia la exportación no están en los archivos añadidos. Si la exportación tiene más partes, añádelas. Si no, importa sin ellos.",
+    "import_without": "Importar sin ellos",
+    "missing_examples": "Archivos que faltan",
+    "found": "Encontrado en la exportación",
+    "error_empty": "No se encontraron publicaciones, fotos ni chats en estos archivos. Comprueba que sea una exportación de {platform} en formato JSON.",
+    "error_html": "Esta exportación está en formato HTML. Vuelve a solicitarla con el formato JSON.",
+    "error_not_zip": "Uno de los archivos no es un archivo zip ni una carpeta.",
+    "error_file_gone": "Uno de los archivos ya no está en el servidor. Vuelve a añadirlo.",
+    "error_generic": "Algo salió mal durante la importación. El registro del servidor tiene los detalles.",
+    "cancel_import": "Detener importación",
+    "cancelled_title": "Importación detenida",
+    "cancelled_body": "Lo ya importado se conserva. Importar de nuevo los mismos archivos continúa donde se detuvo.",
+    "close_page": "Puedes cerrar esta página; la importación continúa en el servidor.",
+    "stat_new_memories": "Recuerdos nuevos",
+    "stat_photos": "Fotos",
+    "stat_videos": "Vídeos",
+    "stat_conversations": "Conversaciones",
+    "stat_messages": "Mensajes nuevos",
+    "report_year": "Año",
+    "report_problems_title": "Archivos que no se pudieron leer",
+    "report_missing_one": "{count} archivo al que hace referencia la exportación no estaba en los archivos",
+    "report_missing_other": "{count} archivos a los que hace referencia la exportación no estaban en los archivos",
+    "report_check_years": "Comprueba que estén todos los años que esperas antes de cerrar la cuenta.",
+    "done_title": "Configuración completada",
+    "done_body": "Añade fuentes en cualquier momento con {action} en el menú.",
+    "imported_sources": "Importado",
+    "upload_more": "Añadir más archivos",
+    "previews_left_one": "Preparando {count} vista previa",
+    "previews_left_other": "Preparando {count} vistas previas"
   },
   "settings": {
     "title": "Ajustes",
@@ -439,5 +491,59 @@
     "network": "No hay conexión con el servidor.",
     "not_found": "Esta página no existe.",
     "go_home": "Ir a Hoy"
+  },
+  "guide": {
+    "facebook": {
+      "intro": "Facebook lo llama **Descargar tu información**. Está en el Centro de cuentas de Meta.",
+      "steps": [
+        "En facebook.com, abre el menú bajo tu foto de perfil y ve a **Configuración y privacidad › Configuración**.",
+        "Abre el **Centro de cuentas** y ve a **Tu información y permisos › Descargar tu información**.",
+        "Elige **Descargar o transferir información** y selecciona tu perfil de **Facebook**.",
+        "Elige **Toda la información disponible** y después **Descargar en el dispositivo**.",
+        "Pon **Intervalo de fechas** en **Desde el principio**, **Formato** en **JSON** y **Calidad del contenido multimedia** en **Alta**.",
+        "Elige **Crear archivos**."
+      ],
+      "ready": "Facebook envía una notificación y un correo cuando los archivos están listos, lo que tarda desde unas horas hasta varios días. Descarga cada parte desde **Descargar tu información**; los enlaces solo son válidos unos días.",
+      "extra_title": "Chats cifrados de Messenger",
+      "extra_body": "Los chats con cifrado de extremo a extremo no están en esta exportación. Descárgalos aparte:",
+      "extra_steps": [
+        "En messenger.com, elige tu foto de perfil y ve a **Privacidad y seguridad › Chats con cifrado de extremo a extremo › Almacenamiento de mensajes**.",
+        "Elige **Descargar datos del almacenamiento seguro** y confirma con tu contraseña.",
+        "Deja la página abierta hasta que se descargue el archivo **messages.zip**. Añádelo junto con los demás archivos."
+      ]
+    },
+    "instagram": {
+      "intro": "Instagram usa **Descargar tu información** en el Centro de cuentas de Meta.",
+      "steps": [
+        "En instagram.com, abre **Más › Configuración**. En la app, abre tu perfil y el menú.",
+        "Abre el **Centro de cuentas** y ve a **Tu información y permisos › Descargar tu información**.",
+        "Elige **Descargar o transferir información** y selecciona tu perfil de **Instagram**.",
+        "Elige **Toda la información disponible** y después **Descargar en el dispositivo**.",
+        "Pon **Intervalo de fechas** en **Desde el principio**, **Formato** en **JSON** y **Calidad del contenido multimedia** en **Alta**.",
+        "Elige **Crear archivos**."
+      ],
+      "ready": "Instagram envía un correo cuando los archivos están listos, normalmente en menos de un día. Descarga cada parte desde **Descargar tu información**; los enlaces solo son válidos unos días."
+    },
+    "x": {
+      "intro": "X lo llama **Descargar un archivo con tus datos**. Solo se puede hacer en el sitio web.",
+      "steps": [
+        "En x.com, abre **Más opciones › Configuración y privacidad**.",
+        "Ve a **Tu cuenta › Descargar un archivo con tus datos**.",
+        "Confirma tu contraseña e introduce el código que te envía X.",
+        "Elige **Solicitar archivo**."
+      ],
+      "ready": "X envía una notificación cuando el archivo está listo, normalmente tras un día o más. Vuelve a la misma página y elige **Descargar archivo**. Los archivos grandes vienen en varias partes; descárgalas todas."
+    },
+    "snapchat": {
+      "intro": "Snapchat lo llama **Mis datos**. Los Recuerdos solo se incluyen si los activas.",
+      "steps": [
+        "Ve a **accounts.snapchat.com** e inicia sesión.",
+        "Elige **Mis datos**.",
+        "Activa **Exportar tus Recuerdos** y **Exportar archivos JSON**, y selecciona todas las demás categorías.",
+        "Pon el periodo en **Desde siempre**.",
+        "Confirma tu dirección de correo y elige **Enviar**."
+      ],
+      "ready": "Snapchat envía un correo cuando la exportación está lista, lo que puede tardar un día o más. Usa el enlace del correo o vuelve a **Mis datos › Ver exportaciones**. Las exportaciones con muchos Recuerdos vienen en varios archivos zip; descárgalos todos."
+    }
   }
 }
