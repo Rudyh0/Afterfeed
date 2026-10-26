@@ -11,11 +11,43 @@ import (
 	"github.com/rudyh0/afterfeed/internal/media"
 )
 
-// previewsLeft is the number of media files still waiting for a thumbnail.
-var previewsLeft atomic.Int64
+// previewsLeft is the number of media files still waiting for a thumbnail,
+// out of previewsTotal in the current round.
+var previewsLeft, previewsTotal atomic.Int64
 
 // PreviewsLeft returns how many thumbnails are still being prepared.
 func (m *Manager) PreviewsLeft() int64 { return previewsLeft.Load() }
+
+// PreviewProgress returns how many thumbnails are left of how many, while
+// they are being prepared.
+func (m *Manager) PreviewProgress() (left, total int64) {
+	return previewsLeft.Load(), previewsTotal.Load()
+}
+
+// PrepareNew reads the text in a memory made in the web app right away, so
+// search finds it soon, and then makes any missing thumbnails.
+func (m *Manager) PrepareNew(memoryID string) {
+	ctx := m.ctx
+	if ctx == nil || ctx.Err() != nil {
+		return
+	}
+	var rel string
+	if m.st.R.QueryRowContext(ctx, `SELECT path FROM memories WHERE id = ?`, memoryID).Scan(&rel) != nil {
+		m.kickPreviews()
+		return
+	}
+	m.running.Add(1)
+	go func() {
+		defer m.running.Done()
+		if m.media.CanReadText() {
+			var failures atomic.Int64
+			if _, err := m.readMemoryText(ctx, textJob{memoryID: memoryID, rel: rel}, &failures); err != nil && ctx.Err() == nil {
+				slog.Warn("read text", "memory", rel, "err", err)
+			}
+		}
+		m.kickPreviews()
+	}()
+}
 
 func (m *Manager) kickPreviews() {
 	select {
@@ -44,6 +76,12 @@ func (m *Manager) previewWorker(ctx context.Context) {
 		}
 		if err := m.preparePreviews(ctx); err != nil && ctx.Err() == nil {
 			slog.Warn("prepare previews", "err", err)
+		}
+		// Then the text in photos, for search.
+		if !m.importRunning() && !m.previewsWaiting() {
+			if err := m.readTexts(ctx); err != nil && ctx.Err() == nil {
+				slog.Warn("read text in photos", "err", err)
+			}
 		}
 	}
 }
@@ -96,6 +134,7 @@ func (m *Manager) preparePreviews(ctx context.Context) error {
 	}
 	slog.Info("preparing previews", "count", len(jobs))
 	previewsLeft.Store(int64(len(jobs)))
+	previewsTotal.Store(int64(len(jobs)))
 	defer previewsLeft.Store(0)
 	began := time.Now()
 	var busyMu sync.Mutex

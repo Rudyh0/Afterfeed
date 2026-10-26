@@ -13,5 +13,6 @@ Afterfeed needs no configuration file. Everything has a default that works in th
 | `AFTERFEED_CACHE_DIR` | `/cache` if mounted, otherwise `/config/cache` | Thumbnails and previews |
 | `AFTERFEED_IMPORT_DIR` | `/data/import` | Folder that the Take-in reads export files from |
 | `AFTERFEED_PREVIEW_URL` | | URL of a Gotenberg service for [document previews](./document-previews) |
+| `AFTERFEED_OCR_LANGUAGES` | all installed | Languages for reading [text in photos](/guide/search#text-in-photos), such as `nld+eng`, or `off` |
 | `AFTERFEED_SECURE_COOKIES` | `auto` | `auto` marks cookies secure when the request came over HTTPS. Set `true` to always require HTTPS, `false` to never |
 | `AFTERFEED_LOG_LEVEL` | `info` | `debug`, `info`, `warn` or `error` |

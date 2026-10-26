@@ -11,6 +11,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 )
@@ -166,5 +167,72 @@ func TestVideoThumbsDoNotDeadlock(t *testing.T) {
 		case <-timeout:
 			t.Fatal("video thumbnails are stuck waiting for each other")
 		}
+	}
+}
+
+func TestReadText(t *testing.T) {
+	s := New(t.TempDir())
+	if !s.CanReadText() {
+		t.Skip("tesseract or its language models are not installed")
+	}
+	photo := "testdata/caption.jpg"
+	if _, err := os.Stat(photo); err != nil {
+		t.Skip("no test photo")
+	}
+	text, err := s.ReadText(context.Background(), Source{ID: "ocr1", Path: photo, Kind: Photo, Mime: "image/jpeg"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{"Texel", "Strandpaviljoen"} {
+		if !strings.Contains(text, want) {
+			t.Errorf("text %q lacks %q", text, want)
+		}
+	}
+}
+
+func TestParseTSV(t *testing.T) {
+	tsv := "level\tpage_num\tblock_num\tpar_num\tline_num\tword_num\tleft\ttop\twidth\theight\tconf\ttext\n" +
+		"5\t1\t1\t1\t1\t1\t0\t0\t1\t1\t96\tZomer\n" +
+		"5\t1\t1\t1\t1\t2\t0\t0\t1\t1\t95\top\n" +
+		"5\t1\t1\t1\t1\t3\t0\t0\t1\t1\t95\tTexel\n" +
+		"5\t1\t2\t1\t1\t1\t0\t0\t1\t1\t91\tle\n" +
+		"5\t1\t3\t1\t1\t1\t0\t0\t1\t1\t30\tStrand\n"
+	if got := parseTSV(tsv); got != "Zomer op Texel" {
+		t.Errorf("parseTSV = %q", got)
+	}
+}
+
+// A Snapchat caption is in the overlay, not in the photo itself.
+func TestReadTextInOverlay(t *testing.T) {
+	s := New(t.TempDir())
+	if !s.CanReadText() || s.tools.Vips == "" {
+		t.Skip("tesseract, its language models or vips are not installed")
+	}
+	dir := t.TempDir()
+	photo := filepath.Join(dir, "photo.jpg")
+	overlay := filepath.Join(dir, "overlay.png")
+	run := func(args ...string) {
+		if out, err := exec.Command(args[0], args[1:]...).CombinedOutput(); err != nil {
+			t.Fatalf("%v: %v %s", args, err, out)
+		}
+	}
+	run("vips", "black", filepath.Join(dir, "black.v"), "1080", "1920", "--bands", "3")
+	run("vips", "linear", filepath.Join(dir, "black.v"), photo, "1", "90", "--uchar")
+	if out, err := exec.Command("vips", "text", filepath.Join(dir, "text.v"), "Pannenkoeken bij oma", "--dpi", "600",
+		"--font", "sans").CombinedOutput(); err != nil {
+		t.Skipf("vips cannot draw text here: %v %s", err, out)
+	}
+	// White text with an alpha channel from the rendered text.
+	run("vips", "embed", filepath.Join(dir, "text.v"), filepath.Join(dir, "mask.v"), "60", "900", "1080", "1920")
+	run("vips", "bandjoin_const", filepath.Join(dir, "mask.v"), filepath.Join(dir, "rgb.v"), "0 0")
+	run("vips", "linear", filepath.Join(dir, "rgb.v"), filepath.Join(dir, "white.v"), "0 0 0", "255 255 255", "--uchar")
+	run("vips", "bandjoin", filepath.Join(dir, "white.v")+" "+filepath.Join(dir, "mask.v"), overlay)
+
+	text, err := s.ReadText(context.Background(), Source{ID: "ocr2", Path: photo, Kind: Photo, Mime: "image/jpeg", Overlay: overlay})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(text, "Pannenkoeken") {
+		t.Errorf("text %q lacks the caption", text)
 	}
 }

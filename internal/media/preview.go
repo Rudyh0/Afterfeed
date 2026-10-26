@@ -60,6 +60,8 @@ type Service struct {
 
 	mu       sync.Mutex
 	inflight map[string]*call
+	// langs caches the OCR languages that are installed.
+	langs *string
 }
 
 type call struct {
@@ -239,6 +241,9 @@ func (s *Service) imageVariant(ctx context.Context, in, overlay string, size int
 		return ErrUnsupported
 	}
 	target := out + "[Q=80,strip]"
+	if strings.HasSuffix(out, ".png") {
+		target = out
+	}
 	if !strings.Contains(in, "[") {
 		in += "[0]"
 	}

@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"math"
 	"net/http"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -98,37 +99,126 @@ type cluster struct {
 	Kind     string  `json:"kind,omitempty"`
 }
 
-// mapClusters groups memories in squares of about 60 pixels at the zoom
-// level, so the map shows a manageable number of markers.
+// mapClusters groups memories that would be within about 60 pixels of each
+// other on the map at this zoom level, so the map shows a manageable number
+// of markers. Positions are compared in map pixels (Web Mercator), where a
+// degree of latitude is taller than a degree of longitude away from the
+// equator.
 func (s *Server) mapClusters(w http.ResponseWriter, r *http.Request) error {
 	ctx := r.Context()
 	zoom, _ := strconv.ParseFloat(r.URL.Query().Get("zoom"), 64)
 	zoom = math.Max(0, math.Min(22, zoom))
-	cellDeg := 360 / (512 * math.Pow(2, zoom)) * 60
 	where, args := mapFilter(r)
-	rows, err := s.store.R.QueryContext(ctx, `SELECT COUNT(*), AVG(m.lat), AVG(m.lon), MAX(m.photo_count + m.video_count), m.id
-		FROM memories m WHERE `+where+`
-		GROUP BY CAST((m.lat + 90) / ? AS INTEGER), CAST((m.lon + 180) / ? AS INTEGER)
-		LIMIT 2000`, append(args, cellDeg, cellDeg)...)
+	rows, err := s.store.R.QueryContext(ctx, `SELECT m.id, m.lat, m.lon, m.photo_count + m.video_count
+		FROM memories m WHERE `+where+` ORDER BY m.taken_at DESC LIMIT 200000`, args...)
 	if err != nil {
 		return err
 	}
-	out := []cluster{}
+	var points []mapPoint
 	for rows.Next() {
-		var c cluster
-		var media int
-		if err := rows.Scan(&c.Count, &c.Lat, &c.Lon, &media, &c.MemoryID); err != nil {
+		var p mapPoint
+		if err := rows.Scan(&p.id, &p.lat, &p.lon, &p.media); err != nil {
 			rows.Close()
 			return err
 		}
-		out = append(out, c)
+		p.x, p.y = mercator(p.lat, p.lon, zoom)
+		points = append(points, p)
 	}
 	rows.Close()
+	if err := rows.Err(); err != nil {
+		return err
+	}
+	out := clusterPoints(points, 60)
 	if err := s.coverMedia(ctx, out); err != nil {
 		return err
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"clusters": out})
 	return nil
+}
+
+type mapPoint struct {
+	id       string
+	lat, lon float64
+	x, y     float64
+	media    int
+}
+
+// mercator returns the position of a point in pixels of a 256-pixel tile
+// world at the zoom level.
+func mercator(lat, lon, zoom float64) (float64, float64) {
+	size := 256 * math.Pow(2, zoom)
+	lat = math.Max(-85.05, math.Min(85.05, lat))
+	phi := lat * math.Pi / 180
+	x := (lon + 180) / 360 * size
+	y := (1 - math.Log(math.Tan(phi)+1/math.Cos(phi))/math.Pi) / 2 * size
+	return x, y
+}
+
+// clusterPoints groups points on a grid of cells of the given size, then
+// merges groups whose centres are closer than that, which the grid alone
+// leaves when points fall on both sides of a cell edge.
+func clusterPoints(points []mapPoint, cell float64) []cluster {
+	type group struct {
+		x, y      float64 // sum of pixel positions
+		lat, lon  float64 // sum of positions
+		n         int
+		best      string
+		bestMedia int
+	}
+	cells := map[[2]int64]*group{}
+	var order []*group
+	for _, p := range points {
+		k := [2]int64{int64(math.Floor(p.x / cell)), int64(math.Floor(p.y / cell))}
+		g := cells[k]
+		if g == nil {
+			g = &group{best: p.id, bestMedia: -1}
+			cells[k] = g
+			order = append(order, g)
+		}
+		g.x += p.x
+		g.y += p.y
+		g.lat += p.lat
+		g.lon += p.lon
+		g.n++
+		// The cover is the memory with the most photos and videos, the
+		// newest of those (points come newest first).
+		if p.media > g.bestMedia {
+			g.best, g.bestMedia = p.id, p.media
+		}
+	}
+	// Biggest groups first, so smaller neighbours join them.
+	sort.SliceStable(order, func(i, j int) bool { return order[i].n > order[j].n })
+	var kept []*group
+	for _, g := range order {
+		cx, cy := g.x/float64(g.n), g.y/float64(g.n)
+		merged := false
+		for _, k := range kept {
+			kx, ky := k.x/float64(k.n), k.y/float64(k.n)
+			if math.Hypot(cx-kx, cy-ky) < cell {
+				k.x += g.x
+				k.y += g.y
+				k.lat += g.lat
+				k.lon += g.lon
+				k.n += g.n
+				if g.bestMedia > k.bestMedia {
+					k.best, k.bestMedia = g.best, g.bestMedia
+				}
+				merged = true
+				break
+			}
+		}
+		if !merged {
+			kept = append(kept, g)
+		}
+		if len(kept) >= 2000 {
+			break
+		}
+	}
+	out := make([]cluster, 0, len(kept))
+	for _, g := range kept {
+		out = append(out, cluster{Lat: g.lat / float64(g.n), Lon: g.lon / float64(g.n), Count: g.n, MemoryID: g.best})
+	}
+	return out
 }
 
 // coverMedia adds the first photo or video of each cluster's memory.

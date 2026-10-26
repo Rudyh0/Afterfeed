@@ -277,6 +277,7 @@ func (s *storeSink) storeMemory(im *Memory) error {
 //
 // index is set for a memory that is on disk but not yet in the index.
 func (s *storeSink) mergeMemory(rel string, im *Memory, index bool) error {
+	defer s.m.lib.LockMemory(rel)()
 	mem, err := s.m.lib.LoadMemory(rel)
 	if err != nil {
 		return &problemError{rel, err}

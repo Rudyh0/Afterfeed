@@ -15,9 +15,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"hash/fnv"
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/rudyh0/afterfeed/internal/store"
@@ -101,6 +103,20 @@ type Media struct {
 	Overlay string `json:"overlay,omitempty"`
 	// Source is the path of the file in the export.
 	Source string `json:"source,omitempty"`
+	// OCR is the text recognised in the photo or video frame. It is nil
+	// until the file has been looked at, and empty when it has no text.
+	OCR *string `json:"ocr,omitempty"`
+}
+
+// OCRText joins the text recognised in all media of a memory.
+func (m *Memory) OCRText() string {
+	var parts []string
+	for _, md := range m.Media {
+		if md.OCR != nil && *md.OCR != "" {
+			parts = append(parts, *md.OCR)
+		}
+	}
+	return strings.Join(parts, "\n")
 }
 
 // HashID derives a stable identifier from the given parts.
@@ -122,6 +138,19 @@ type Library struct {
 	st       *store.Store
 	defLoc   *time.Location
 	geocode  Geocoder
+	// locks serialise changes to one memory.json: the editor, the importer
+	// and text recognition each read, change and write it.
+	locks [64]sync.Mutex
+}
+
+// LockMemory keeps others from changing a memory until unlock is called.
+// Hold it from loading memory.json until it is saved and indexed.
+func (l *Library) LockMemory(rel string) (unlock func()) {
+	h := fnv.New32a()
+	h.Write([]byte(rel))
+	mu := &l.locks[h.Sum32()%uint32(len(l.locks))]
+	mu.Lock()
+	return mu.Unlock
 }
 
 // Geocoder finds the city and country for coordinates.
@@ -255,8 +284,8 @@ func (l *Library) IndexMemory(ctx context.Context, tx *sql.Tx, rel string, m *Me
 	_, err := tx.ExecContext(ctx, `INSERT INTO memories (
 			id, source_key, platform, kind, taken_at, tz, local_date, month_day, year,
 			text, link, album, place_name, lat, lon, country_code, region, city,
-			media_count, photo_count, video_count, vault, edited, import_id, path, created_at, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+			media_count, photo_count, video_count, vault, edited, import_id, path, created_at, updated_at, ocr_text)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 		ON CONFLICT(id) DO UPDATE SET
 			kind = excluded.kind, taken_at = excluded.taken_at, tz = excluded.tz,
 			local_date = excluded.local_date, month_day = excluded.month_day, year = excluded.year,
@@ -265,12 +294,13 @@ func (l *Library) IndexMemory(ctx context.Context, tx *sql.Tx, rel string, m *Me
 			region = excluded.region, city = excluded.city, media_count = excluded.media_count,
 			photo_count = excluded.photo_count, video_count = excluded.video_count,
 			vault = excluded.vault, edited = excluded.edited, path = excluded.path,
-			import_id = COALESCE(memories.import_id, excluded.import_id), updated_at = excluded.updated_at`,
+			import_id = COALESCE(memories.import_id, excluded.import_id), updated_at = excluded.updated_at,
+			ocr_text = excluded.ocr_text`,
 		m.ID, m.Source.Key, m.Platform, m.Kind, store.FormatTime(m.TakenAt), nullIfEmpty(m.TZ),
 		local.Format("2006-01-02"), local.Format("01-02"), local.Year(),
 		m.Text, m.Link, m.Album, place.Name, lat, lon, place.CountryCode, place.Region, place.City,
 		len(m.Media), photos, videos, boolInt(m.Vault), edited, imp, rel,
-		store.FormatTime(m.CreatedAt), now)
+		store.FormatTime(m.CreatedAt), now, m.OCRText())
 	if err != nil {
 		return fmt.Errorf("index memory %s: %w", m.ID, err)
 	}
@@ -284,10 +314,10 @@ func (l *Library) IndexMemory(ctx context.Context, tx *sql.Tx, rel string, m *Me
 		}
 		_, err := tx.ExecContext(ctx, `INSERT INTO media (
 				id, memory_id, position, media_key, kind, file, overlay, text, mime,
-				width, height, duration, size, sha256, taken_at, lat, lon)
-			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+				width, height, duration, size, sha256, taken_at, lat, lon, ocr_text)
+			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 			md.ID, m.ID, i, md.Key, md.Kind, md.File, md.Overlay, md.Text, md.Mime,
-			md.Width, md.Height, md.Duration, md.Size, md.SHA256, taken, md.Lat, md.Lon)
+			md.Width, md.Height, md.Duration, md.Size, md.SHA256, taken, md.Lat, md.Lon, md.OCR)
 		if err != nil {
 			return fmt.Errorf("index media %s: %w", md.ID, err)
 		}
@@ -424,27 +454,38 @@ func (l *Library) GeocodeMissing(ctx context.Context) (int, error) {
 		if ctx.Err() != nil {
 			break
 		}
-		m, err := l.LoadMemory(rel)
+		m, changed, err := l.fillMissingPlace(rel)
 		if err != nil {
-			continue
-		}
-		PlaceFromMedia(m)
-		before := ""
-		if m.Place != nil {
-			before = m.Place.City + m.Place.CountryCode
-		}
-		l.FillPlace(m.Place)
-		if m.Place == nil || m.Place.City+m.Place.CountryCode == before {
-			continue
-		}
-		if err := l.SaveMemory(rel, m); err != nil {
 			return n, err
 		}
-		rel, m := rel, m
+		if !changed {
+			continue
+		}
+		rel := rel
 		if err := b.add(func(tx *sql.Tx) error { return l.IndexMemory(ctx, tx, rel, m, 0) }); err != nil {
 			return n, err
 		}
 		n++
 	}
 	return n, b.flush()
+}
+
+// fillMissingPlace names the place of one memory and saves it when that
+// changed it.
+func (l *Library) fillMissingPlace(rel string) (*Memory, bool, error) {
+	defer l.LockMemory(rel)()
+	m, err := l.LoadMemory(rel)
+	if err != nil {
+		return nil, false, nil
+	}
+	PlaceFromMedia(m)
+	before := ""
+	if m.Place != nil {
+		before = m.Place.City + m.Place.CountryCode
+	}
+	l.FillPlace(m.Place)
+	if m.Place == nil || m.Place.City+m.Place.CountryCode == before {
+		return m, false, nil
+	}
+	return m, true, l.SaveMemory(rel, m)
 }

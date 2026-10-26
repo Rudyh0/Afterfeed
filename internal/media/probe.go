@@ -41,6 +41,7 @@ type Tools struct {
 	VipsThumb  string
 	VipsHeader string
 	Exiftool   string
+	Tesseract  string
 }
 
 // FindTools looks the programs up in PATH.
@@ -59,6 +60,7 @@ func FindTools() Tools {
 		VipsThumb:  look("vipsthumbnail"),
 		VipsHeader: look("vipsheader"),
 		Exiftool:   look("exiftool"),
+		Tesseract:  look("tesseract"),
 	}
 }
 
@@ -277,9 +279,17 @@ func parseColonFields(out []byte) map[string]string {
 
 // run executes a tool with a timeout and returns its standard output.
 func (s *Service) run(ctx context.Context, timeout time.Duration, name string, args ...string) ([]byte, error) {
+	return s.runEnv(ctx, timeout, nil, name, args...)
+}
+
+// runEnv is run with extra environment variables.
+func (s *Service) runEnv(ctx context.Context, timeout time.Duration, env []string, name string, args ...string) ([]byte, error) {
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 	cmd := exec.CommandContext(ctx, name, args...)
+	if len(env) > 0 {
+		cmd.Env = append(os.Environ(), env...)
+	}
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout, cmd.Stderr = &stdout, &stderr
 	if err := cmd.Run(); err != nil {

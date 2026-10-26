@@ -52,22 +52,27 @@ type editRequest struct {
 	Vault   *bool            `json:"vault"`
 }
 
-// loadForEdit loads a memory the session may change.
-func (s *Server) loadForEdit(r *http.Request, id string) (*library.Memory, string, error) {
-	var rel string
+// loadForEdit loads a memory the session may change. The memory stays
+// locked until unlock is called, after it has been saved.
+func (s *Server) loadForEdit(r *http.Request, id string) (m *library.Memory, rel string, unlock func(), err error) {
 	var vault bool
-	err := s.store.R.QueryRowContext(r.Context(), `SELECT path, vault FROM memories WHERE id = ?`, id).Scan(&rel, &vault)
+	err = s.store.R.QueryRowContext(r.Context(), `SELECT path, vault FROM memories WHERE id = ?`, id).Scan(&rel, &vault)
 	if errors.Is(err, sql.ErrNoRows) {
-		return nil, "", errNotFound()
+		return nil, "", nil, errNotFound()
 	}
 	if err != nil {
-		return nil, "", err
+		return nil, "", nil, err
 	}
 	if vault && !s.vaultOpen(r) {
-		return nil, "", errNotFound()
+		return nil, "", nil, errNotFound()
 	}
-	m, err := s.deps.Library.LoadMemory(rel)
-	return m, rel, err
+	unlock = s.deps.Library.LockMemory(rel)
+	m, err = s.deps.Library.LoadMemory(rel)
+	if err != nil {
+		unlock()
+		return nil, "", nil, err
+	}
+	return m, rel, unlock, nil
 }
 
 // remember stores the values from the export before the first change.
@@ -107,10 +112,11 @@ func (s *Server) editMemory(w http.ResponseWriter, r *http.Request) error {
 	if err := readJSON(r, &req); err != nil {
 		return err
 	}
-	m, rel, err := s.loadForEdit(r, r.PathValue("id"))
+	m, rel, unlock, err := s.loadForEdit(r, r.PathValue("id"))
 	if err != nil {
 		return err
 	}
+	defer unlock()
 
 	for _, f := range req.Restore {
 		if m.Original == nil {
@@ -252,37 +258,13 @@ func (s *Server) bulkEdit(w http.ResponseWriter, r *http.Request) error {
 	}
 	changed := 0
 	for _, id := range req.IDs {
-		m, rel, err := s.loadForEdit(r, id)
+		ok, err := s.bulkEditOne(r, id, &req, setTime, tz)
 		if err != nil {
-			continue
-		}
-		before := *m
-		if req.Place != nil && (m.Place == nil || !m.Place.HasCoordinates() || req.Place.Overwrite) {
-			p := req.Place.place()
-			if !samePlace(p, m.Place) {
-				remember(m)
-				s.deps.Library.FillPlace(p)
-				m.Place = p
-			}
-		}
-		if req.ShiftMinutes != nil && *req.ShiftMinutes != 0 {
-			remember(m)
-			m.TakenAt = m.TakenAt.Add(time.Duration(*req.ShiftMinutes) * time.Minute)
-		} else if setTime != nil && !setTime.Equal(m.TakenAt) {
-			remember(m)
-			m.TakenAt, m.TZ = setTime.UTC(), tz
-		}
-		if req.Vault != nil {
-			m.Vault = *req.Vault
-		}
-		settle(m)
-		if before.UpdatedAt.Equal(m.UpdatedAt) && memoryEqual(&before, m) {
-			continue
-		}
-		if err := s.saveEdited(ctx, rel, m); err != nil {
 			return err
 		}
-		changed++
+		if ok {
+			changed++
+		}
 	}
 	if err := s.deps.Library.RefreshMonthStats(ctx); err != nil {
 		return err
@@ -294,4 +276,38 @@ func (s *Server) bulkEdit(w http.ResponseWriter, r *http.Request) error {
 func memoryEqual(a, b *library.Memory) bool {
 	return a.TakenAt.Equal(b.TakenAt) && a.TZ == b.TZ && a.Text == b.Text && samePlace(a.Place, b.Place) &&
 		a.Vault == b.Vault && (a.Original == nil) == (b.Original == nil)
+}
+
+// bulkEditOne applies a bulk change to one memory and reports whether it
+// changed. Memories that cannot be found are skipped.
+func (s *Server) bulkEditOne(r *http.Request, id string, req *bulkRequest, setTime *time.Time, tz string) (bool, error) {
+	m, rel, unlock, err := s.loadForEdit(r, id)
+	if err != nil {
+		return false, nil
+	}
+	defer unlock()
+	before := *m
+	if req.Place != nil && (m.Place == nil || !m.Place.HasCoordinates() || req.Place.Overwrite) {
+		p := req.Place.place()
+		if !samePlace(p, m.Place) {
+			remember(m)
+			s.deps.Library.FillPlace(p)
+			m.Place = p
+		}
+	}
+	if req.ShiftMinutes != nil && *req.ShiftMinutes != 0 {
+		remember(m)
+		m.TakenAt = m.TakenAt.Add(time.Duration(*req.ShiftMinutes) * time.Minute)
+	} else if setTime != nil && !setTime.Equal(m.TakenAt) {
+		remember(m)
+		m.TakenAt, m.TZ = setTime.UTC(), tz
+	}
+	if req.Vault != nil {
+		m.Vault = *req.Vault
+	}
+	settle(m)
+	if before.UpdatedAt.Equal(m.UpdatedAt) && memoryEqual(&before, m) {
+		return false, nil
+	}
+	return true, s.saveEdited(r.Context(), rel, m)
 }

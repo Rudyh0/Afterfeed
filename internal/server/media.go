@@ -217,6 +217,14 @@ func (s *Server) librarySummary(w http.ResponseWriter, r *http.Request) error {
 			resp["importing"] = map[string]any{"id": st.ID, "platform": st.Platform, "phase": st.Phase, "progress": st.Progress}
 		}
 	}
+	if s.deps.Imports != nil {
+		if left, total := s.deps.Imports.PreviewProgress(); left > 0 {
+			resp["previews"] = map[string]any{"left": left, "total": total}
+		}
+		if left, total := s.deps.Imports.TextProgress(); left > 0 {
+			resp["reading_text"] = map[string]any{"left": left, "total": total}
+		}
+	}
 	writeJSON(w, http.StatusOK, resp)
 	return nil
 }

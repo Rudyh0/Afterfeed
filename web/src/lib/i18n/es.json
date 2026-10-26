@@ -19,7 +19,11 @@
     "archive": "Archivo",
     "add_source": "Añadir fuente",
     "own_memories": "Recuerdos propios",
-    "importing": "Importando {platform}"
+    "importing": "Importando {platform}",
+    "previews": "Creando vistas previas",
+    "previews_left_one": "falta {count}",
+    "previews_left_other": "faltan {count}",
+    "reading_text": "Leyendo el texto de las fotos"
   },
   "common": {
     "cancel": "Cancelar",
@@ -125,6 +129,7 @@
     "file": "Archivo",
     "dimensions": "Dimensiones",
     "size": "Tamaño",
+    "text_in_media": "Texto en la imagen",
     "duration": "Duración",
     "source_export": "Exportación de {platform} del {date}",
     "added_by_you": "Añadido por ti",

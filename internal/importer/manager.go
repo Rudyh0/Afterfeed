@@ -156,6 +156,8 @@ type Manager struct {
 	previewWake chan struct{}
 	detectCache sync.Map
 	running     sync.WaitGroup
+	// ctx is the context passed to Start, for background work started later.
+	ctx context.Context
 }
 
 // NewManager creates the import manager.
@@ -187,6 +189,7 @@ func (m *Manager) Platforms() []string {
 // Start runs the import worker and the preview worker until ctx is done.
 // Imports that were running when Afterfeed stopped start again.
 func (m *Manager) Start(ctx context.Context) {
+	m.ctx = ctx
 	if _, err := m.st.W.ExecContext(ctx, `UPDATE imports SET status = ?, phase = '', progress = 0 WHERE status = ?`,
 		StatusQueued, StatusRunning); err != nil {
 		slog.Warn("requeue imports", "err", err)

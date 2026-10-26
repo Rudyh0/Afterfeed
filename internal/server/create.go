@@ -189,6 +189,9 @@ func (s *Server) createMemory(w http.ResponseWriter, r *http.Request) error {
 	if err := s.deps.Library.RefreshMonthStats(ctx); err != nil {
 		return err
 	}
+	if s.deps.Imports != nil {
+		s.deps.Imports.PrepareNew(mem.ID)
+	}
 	c, err := s.loadCard(ctx, mem.ID)
 	if err != nil {
 		return err

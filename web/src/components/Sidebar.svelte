@@ -1,7 +1,7 @@
 <script lang="ts">
   import { t } from '../lib/i18n/index.svelte'
   import { router } from '../lib/router.svelte'
-  import { library } from '../lib/library.svelte'
+  import { backgroundWork, library } from '../lib/library.svelte'
   import Icon from './Icon.svelte'
   import Logo from './Logo.svelte'
 
@@ -45,6 +45,16 @@
       </span>
       <span class="importing-bar"><span style:width={`${Math.max(4, Math.round(imp.progress * 100))}%`}></span></span>
     </a>
+  {:else if backgroundWork()}
+    {@const pv = backgroundWork()!}
+    {@const done = Math.max(0, pv.total - pv.left)}
+    <div class="importing" role="status">
+      <span class="importing-line">
+        <span>{t(pv.label)}</span>
+        <span class="tabular">{t('nav.previews_left', { count: pv.left })}</span>
+      </span>
+      <span class="importing-bar"><span style:width={`${Math.max(4, Math.round((done / Math.max(1, pv.total)) * 100))}%`}></span></span>
+    </div>
   {/if}
 
   {#if library.sources.length > 0}
@@ -85,7 +95,7 @@
     text-decoration: none;
   }
 
-  .importing:hover {
+  a.importing:hover {
     background: var(--surface-2);
   }
 
@@ -93,6 +103,11 @@
     display: flex;
     justify-content: space-between;
     gap: 8px;
+  }
+
+  .importing-line .tabular {
+    flex: 0 0 auto;
+    white-space: nowrap;
   }
 
   .importing-bar {

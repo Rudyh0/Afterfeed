@@ -617,8 +617,9 @@
     color: var(--text-3);
   }
 
+  /* MapLibre places markers with position: absolute and a transform; the
+     marker must not change either, or markers shift away from their spot. */
   :global(.af-marker) {
-    position: relative;
     width: 52px;
     height: 52px;
     padding: 0;
@@ -646,7 +647,7 @@
 
   :global(.af-marker.current) {
     border-color: var(--accent);
-    transform: scale(1.15);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 40%, transparent), 0 2px 8px rgba(17, 18, 20, 0.35);
   }
 
   :global(.af-count) {

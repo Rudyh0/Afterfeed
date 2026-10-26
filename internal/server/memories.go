@@ -380,6 +380,8 @@ type detailMedia struct {
 	File   string `json:"file"`
 	Size   int64  `json:"size"`
 	Source string `json:"source,omitempty"`
+	// OCR is the text recognised in the image.
+	OCR string `json:"ocr,omitempty"`
 }
 
 type sourceJSON struct {
@@ -427,13 +429,17 @@ func (s *Server) memory(w http.ResponseWriter, r *http.Request) error {
 		}
 	}
 	for _, md := range mem.Media {
-		d.Media = append(d.Media, detailMedia{
+		dm := detailMedia{
 			cardMedia: cardMedia{ID: md.ID, Kind: md.Kind, Mime: md.Mime, Width: md.Width, Height: md.Height,
 				Duration: md.Duration, Overlay: md.Overlay != "", Text: md.Text},
 			File:   md.File,
 			Size:   md.Size,
 			Source: md.Source,
-		})
+		}
+		if md.OCR != nil {
+			dm.OCR = *md.OCR
+		}
+		d.Media = append(d.Media, dm)
 	}
 	d.Source = sourceJSON{Platform: mem.Platform, Path: mem.Source.Path}
 	if importID.Valid {

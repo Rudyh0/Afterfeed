@@ -1,6 +1,6 @@
 <script lang="ts">
   import { t } from '../lib/i18n/index.svelte'
-  import { library } from '../lib/library.svelte'
+  import { backgroundWork, library } from '../lib/library.svelte'
   import { router } from '../lib/router.svelte'
   import Icon from './Icon.svelte'
 
@@ -36,6 +36,13 @@
     {#if Math.round(imp.progress * 100) > 0}<span class="tabular">{Math.round(imp.progress * 100)}%</span>{/if}
     <span class="importing-bar" style:width={`${Math.max(4, Math.round(imp.progress * 100))}%`}></span>
   </a>
+{:else if backgroundWork()}
+  {@const pv = backgroundWork()!}
+  <div class="importing" role="status">
+    <span>{t(pv.label)}</span>
+    <span class="tabular">{t('nav.previews_left', { count: pv.left })}</span>
+    <span class="importing-bar" style:width={`${Math.max(4, Math.round(((pv.total - pv.left) / Math.max(1, pv.total)) * 100))}%`}></span>
+  </div>
 {/if}
 
 <nav class="tabs" aria-label={t('nav.main')}>

@@ -19,7 +19,11 @@
     "archive": "Archive",
     "add_source": "Add source",
     "own_memories": "Own memories",
-    "importing": "Importing {platform}"
+    "importing": "Importing {platform}",
+    "previews": "Preparing previews",
+    "previews_left_one": "{count} to go",
+    "previews_left_other": "{count} to go",
+    "reading_text": "Reading text in photos"
   },
   "common": {
     "cancel": "Cancel",
@@ -125,6 +129,7 @@
     "file": "File",
     "dimensions": "Dimensions",
     "size": "Size",
+    "text_in_media": "Text in image",
     "duration": "Duration",
     "source_export": "{platform} export, {date}",
     "added_by_you": "Added by you",

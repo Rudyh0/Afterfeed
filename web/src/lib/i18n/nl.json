@@ -19,7 +19,11 @@
     "archive": "Archief",
     "add_source": "Bron toevoegen",
     "own_memories": "Eigen herinneringen",
-    "importing": "{platform} importeren"
+    "importing": "{platform} importeren",
+    "previews": "Voorbeelden maken",
+    "previews_left_one": "nog {count}",
+    "previews_left_other": "nog {count}",
+    "reading_text": "Tekst in foto’s herkennen"
   },
   "common": {
     "cancel": "Annuleren",
@@ -125,6 +129,7 @@
     "file": "Bestand",
     "dimensions": "Afmeting",
     "size": "Grootte",
+    "text_in_media": "Tekst in beeld",
     "duration": "Duur",
     "source_export": "{platform}-export van {date}",
     "added_by_you": "Door jou toegevoegd",

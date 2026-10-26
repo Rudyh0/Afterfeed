@@ -19,7 +19,11 @@
     "archive": "Archive",
     "add_source": "Ajouter une source",
     "own_memories": "Mes souvenirs",
-    "importing": "Import {platform} en cours"
+    "importing": "Import {platform} en cours",
+    "previews": "Création des aperçus",
+    "previews_left_one": "encore {count}",
+    "previews_left_other": "encore {count}",
+    "reading_text": "Lecture du texte des photos"
   },
   "common": {
     "cancel": "Annuler",
@@ -125,6 +129,7 @@
     "file": "Fichier",
     "dimensions": "Dimensions",
     "size": "Taille",
+    "text_in_media": "Texte dans l’image",
     "duration": "Durée",
     "source_export": "Export {platform} du {date}",
     "added_by_you": "Ajouté par vous",

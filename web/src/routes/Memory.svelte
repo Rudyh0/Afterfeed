@@ -17,6 +17,8 @@
     file: string
     size: number
     source?: string
+    /** Text recognised in the photo or video frame. */
+    ocr?: string
   }
 
   interface Detail extends Omit<Card, 'media'> {
@@ -239,6 +241,7 @@
           {/if}
           {#if current.duration}<dt>{t('memory.duration')}</dt><dd class="tabular">{duration(current.duration)}</dd>{/if}
           <dt>{t('memory.size')}</dt><dd class="tabular">{formatBytes(current.size)}</dd>
+          {#if current.ocr}<dt>{t('memory.text_in_media')}</dt><dd class="ocr">{current.ocr}</dd>{/if}
         {/if}
       </dl>
 
@@ -570,6 +573,14 @@
   }
 
   .file {
+    overflow-wrap: anywhere;
+  }
+
+  .ocr {
+    max-height: 9.5em;
+    overflow-y: auto;
+    color: var(--text-2);
+    white-space: pre-line;
     overflow-wrap: anywhere;
   }
 
