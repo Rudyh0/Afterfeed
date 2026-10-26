@@ -14,6 +14,9 @@ import (
 
 	"github.com/rudyh0/afterfeed/internal/auth"
 	"github.com/rudyh0/afterfeed/internal/config"
+	"github.com/rudyh0/afterfeed/internal/importer"
+	"github.com/rudyh0/afterfeed/internal/library"
+	"github.com/rudyh0/afterfeed/internal/media"
 	"github.com/rudyh0/afterfeed/internal/store"
 	"github.com/rudyh0/afterfeed/internal/version"
 )
@@ -28,7 +31,10 @@ type Server struct {
 
 // Deps are the services the API uses.
 type Deps struct {
-	Auth *auth.Service
+	Auth    *auth.Service
+	Imports *importer.Manager
+	Library *library.Library
+	Media   *media.Service
 }
 
 // New creates a server.
@@ -81,6 +87,8 @@ func (s *Server) routes() {
 	m.HandleFunc("GET /api/state", s.handle(s.stateWithAuth))
 	s.authRoutes()
 	s.settingsRoutes()
+	s.importRoutes()
+	s.mediaRoutes()
 
 	m.HandleFunc("/api/", func(w http.ResponseWriter, r *http.Request) {
 		writeError(w, r, errNotFound())

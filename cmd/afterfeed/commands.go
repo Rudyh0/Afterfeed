@@ -8,8 +8,10 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/rudyh0/afterfeed/internal/auth"
+	"github.com/rudyh0/afterfeed/internal/library"
 )
 
 func authCommand(args []string) error {
@@ -91,5 +93,28 @@ func indexCommand(args []string) error {
 	if len(args) == 0 || args[0] != "rebuild" {
 		return errors.New("usage: afterfeed index rebuild")
 	}
-	return errors.New("not implemented yet")
+	cfg, st, err := openStore()
+	if err != nil {
+		return err
+	}
+	defer st.Close()
+	lib := library.New(cfg.MemoriesDir(), cfg.MessagesDir(), st)
+	fmt.Println("Rebuilding the index from", cfg.DataDir, "…")
+	start := time.Now()
+	stats, err := lib.Rebuild(context.Background(), func(s library.RebuildStats) {
+		fmt.Printf("\r%d memories, %d conversations", s.Memories, s.Conversations)
+	})
+	fmt.Println()
+	if err != nil {
+		return err
+	}
+	slog.Warn("index rebuilt from the command line", "memories", stats.Memories, "conversations", stats.Conversations)
+	fmt.Printf("Done in %s: %d memories and %d conversations.\n", time.Since(start).Round(time.Second), stats.Memories, stats.Conversations)
+	if n := len(stats.Skipped); n > 0 {
+		fmt.Printf("%d files could not be read:\n", n)
+		for _, p := range stats.Skipped {
+			fmt.Println("  " + p)
+		}
+	}
+	return nil
 }
