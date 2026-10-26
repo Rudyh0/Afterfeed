@@ -65,7 +65,8 @@
     "story": "Story",
     "reel": "Reel",
     "memory": "Own memory",
-    "snap": "Memory"
+    "snap": "Memory",
+    "reply": "Reply"
   },
   "count": {
     "memories_one": "{count} memory",
@@ -135,7 +136,10 @@
     "download_video": "Download video",
     "download_all": "Download all {count}",
     "play_video": "Play video, {duration}",
-    "back_to": "Back to {label}"
+    "back_to": "Back to {label}",
+    "delete": "Delete memory",
+    "delete_confirm": "Delete this memory? Its photos and videos are removed from Afterfeed.",
+    "album": "Album"
   },
   "menu": {
     "download": "Download",

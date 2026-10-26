@@ -65,7 +65,8 @@
     "story": "Story",
     "reel": "Reel",
     "memory": "Eigen herinnering",
-    "snap": "Memory"
+    "snap": "Memory",
+    "reply": "Reactie"
   },
   "count": {
     "memories_one": "{count} herinnering",
@@ -135,7 +136,10 @@
     "download_video": "Video downloaden",
     "download_all": "Alle {count} downloaden",
     "play_video": "Video afspelen, {duration}",
-    "back_to": "Terug naar {label}"
+    "back_to": "Terug naar {label}",
+    "delete": "Herinnering verwijderen",
+    "delete_confirm": "Deze herinnering verwijderen? De foto’s en video’s worden uit Afterfeed verwijderd.",
+    "album": "Album"
   },
   "menu": {
     "download": "Downloaden",

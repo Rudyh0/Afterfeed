@@ -336,3 +336,25 @@ func readJSONFile(path string, v any) error {
 	}
 	return json.Unmarshal(data, v)
 }
+
+// DeleteMemory removes a memory folder and its index entries. Cached
+// previews are removed by the caller, which knows the media ids.
+func (l *Library) DeleteMemory(ctx context.Context, id, rel string) error {
+	tx, err := l.st.W.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	if _, err := tx.ExecContext(ctx, `DELETE FROM memories WHERE id = ?`, id); err != nil {
+		return err
+	}
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+	if rel != "" && !strings.Contains(rel, "..") {
+		if err := os.RemoveAll(l.MemoryDir(rel)); err != nil {
+			return err
+		}
+	}
+	return l.RefreshMonthStats(ctx)
+}

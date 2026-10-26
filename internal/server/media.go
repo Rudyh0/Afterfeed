@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/rudyh0/afterfeed/internal/media"
-	"github.com/rudyh0/afterfeed/internal/store"
 )
 
 func (s *Server) mediaRoutes() {
@@ -64,9 +63,7 @@ func (s *Server) serveMedia(w http.ResponseWriter, r *http.Request) error {
 		}
 		return serveFile(w, r, src.Overlay, "image/png", "", false)
 	case "download":
-		t, _ := store.ParseTime(m.takenAt)
-		name := fmt.Sprintf("afterfeed-%s-%02d%s", t.Format("20060102-150405"), m.position+1, filepath.Ext(m.file))
-		return serveFile(w, r, src.Path, m.mime, name, false)
+		return s.downloadMedia(w, r, m.id)
 	}
 	return errNotFound()
 }

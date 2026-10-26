@@ -65,7 +65,8 @@
     "story": "Story",
     "reel": "Reel",
     "memory": "Eigene Erinnerung",
-    "snap": "Memory"
+    "snap": "Memory",
+    "reply": "Antwort"
   },
   "count": {
     "memories_one": "{count} Erinnerung",
@@ -135,7 +136,10 @@
     "download_video": "Video herunterladen",
     "download_all": "Alle {count} herunterladen",
     "play_video": "Video abspielen, {duration}",
-    "back_to": "Zurück zu {label}"
+    "back_to": "Zurück zu {label}",
+    "delete": "Erinnerung löschen",
+    "delete_confirm": "Diese Erinnerung löschen? Ihre Fotos und Videos werden aus Afterfeed entfernt.",
+    "album": "Album"
   },
   "menu": {
     "download": "Herunterladen",

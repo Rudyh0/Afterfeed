@@ -65,7 +65,8 @@
     "story": "Story",
     "reel": "Reel",
     "memory": "Mon souvenir",
-    "snap": "Souvenir"
+    "snap": "Souvenir",
+    "reply": "Réponse"
   },
   "count": {
     "memories_one": "{count} souvenir",
@@ -135,7 +136,10 @@
     "download_video": "Télécharger la vidéo",
     "download_all": "Tout télécharger ({count})",
     "play_video": "Lire la vidéo, {duration}",
-    "back_to": "Retour à {label}"
+    "back_to": "Retour à {label}",
+    "delete": "Supprimer le souvenir",
+    "delete_confirm": "Supprimer ce souvenir ? Ses photos et vidéos sont retirées d’Afterfeed.",
+    "album": "Album"
   },
   "menu": {
     "download": "Télécharger",
