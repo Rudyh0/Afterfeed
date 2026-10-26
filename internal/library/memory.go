@@ -121,6 +121,38 @@ type Library struct {
 	messages string
 	st       *store.Store
 	defLoc   *time.Location
+	geocode  Geocoder
+}
+
+// Geocoder finds the city and country for coordinates.
+type Geocoder func(lat, lon float64) (city, countryCode string, ok bool)
+
+// SetGeocoder sets the function used to name places.
+func (l *Library) SetGeocoder(g Geocoder) { l.geocode = g }
+
+// FillPlace adds the city and country to a place that only has coordinates.
+func (l *Library) FillPlace(p *Place) {
+	if l.geocode == nil || !p.HasCoordinates() || p.City != "" || p.CountryCode != "" {
+		return
+	}
+	if city, cc, ok := l.geocode(*p.Lat, *p.Lon); ok {
+		p.City, p.CountryCode = city, cc
+	}
+}
+
+// PlaceFromMedia gives a memory without a place the location of its first
+// photo or video that has one.
+func PlaceFromMedia(m *Memory) {
+	if m.Place != nil {
+		return
+	}
+	for _, md := range m.Media {
+		if md.Lat != nil && md.Lon != nil {
+			lat, lon := *md.Lat, *md.Lon
+			m.Place = &Place{Lat: &lat, Lon: &lon}
+			return
+		}
+	}
 }
 
 // New creates a library rooted at the memories and messages folders.
@@ -357,4 +389,55 @@ func (l *Library) DeleteMemory(ctx context.Context, id, rel string) error {
 		}
 	}
 	return l.RefreshMonthStats(ctx)
+}
+
+// GeocodeMissing names the places of memories that have coordinates but no
+// city or country, for example memories imported before place names were
+// available.
+func (l *Library) GeocodeMissing(ctx context.Context) (int, error) {
+	if l.geocode == nil {
+		return 0, nil
+	}
+	rows, err := l.st.R.QueryContext(ctx, `SELECT path FROM memories
+		WHERE lat IS NOT NULL AND city = '' AND country_code = ''`)
+	if err != nil {
+		return 0, err
+	}
+	var rels []string
+	for rows.Next() {
+		var rel string
+		if rows.Scan(&rel) == nil {
+			rels = append(rels, rel)
+		}
+	}
+	rows.Close()
+	n := 0
+	b := newBatch(ctx, l.st.W, 200)
+	for _, rel := range rels {
+		if ctx.Err() != nil {
+			break
+		}
+		m, err := l.LoadMemory(rel)
+		if err != nil {
+			continue
+		}
+		PlaceFromMedia(m)
+		before := ""
+		if m.Place != nil {
+			before = m.Place.City + m.Place.CountryCode
+		}
+		l.FillPlace(m.Place)
+		if m.Place == nil || m.Place.City+m.Place.CountryCode == before {
+			continue
+		}
+		if err := l.SaveMemory(rel, m); err != nil {
+			return n, err
+		}
+		rel, m := rel, m
+		if err := b.add(func(tx *sql.Tx) error { return l.IndexMemory(ctx, tx, rel, m, 0) }); err != nil {
+			return n, err
+		}
+		n++
+	}
+	return n, b.flush()
 }

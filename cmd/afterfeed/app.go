@@ -7,6 +7,7 @@ import (
 
 	"github.com/rudyh0/afterfeed/internal/auth"
 	"github.com/rudyh0/afterfeed/internal/config"
+	"github.com/rudyh0/afterfeed/internal/geo"
 	"github.com/rudyh0/afterfeed/internal/importer"
 	"github.com/rudyh0/afterfeed/internal/importer/facebook"
 	"github.com/rudyh0/afterfeed/internal/importer/instagram"
@@ -35,6 +36,7 @@ func importers() []importer.Importer {
 
 func newApp(ctx context.Context, cfg *config.Config, st *store.Store) (*app, error) {
 	lib := library.New(cfg.MemoriesDir(), cfg.MessagesDir(), st)
+	lib.SetGeocoder(geocoder)
 	ms := media.New(cfg.CacheDir)
 	a := &app{
 		cfg:     cfg,
@@ -50,7 +52,20 @@ func newApp(ctx context.Context, cfg *config.Config, st *store.Store) (*app, err
 	}
 	a.imports.Start(ctx)
 	go a.housekeeping(ctx)
+	go func() {
+		if n, err := lib.GeocodeMissing(ctx); err != nil && ctx.Err() == nil {
+			slog.Warn("name places", "err", err)
+		} else if n > 0 {
+			slog.Info("named places", "memories", n)
+		}
+	}()
 	return a, nil
+}
+
+// geocoder names places with the embedded list of places, within 30 km.
+func geocoder(lat, lon float64) (string, string, bool) {
+	p, ok := geo.Default().Nearest(lat, lon, 30)
+	return p.Name, p.Country, ok
 }
 
 func (a *app) deps() server.Deps {

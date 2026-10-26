@@ -169,6 +169,8 @@ func (s *Server) createMemory(w http.ResponseWriter, r *http.Request) error {
 		}
 		mem.Media = append(mem.Media, md)
 	}
+	library.PlaceFromMedia(mem)
+	s.deps.Library.FillPlace(mem.Place)
 	if err := s.deps.Library.SaveMemory(rel, mem); err != nil {
 		os.RemoveAll(dir)
 		return err

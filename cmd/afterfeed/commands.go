@@ -99,6 +99,7 @@ func indexCommand(args []string) error {
 	}
 	defer st.Close()
 	lib := library.New(cfg.MemoriesDir(), cfg.MessagesDir(), st)
+	lib.SetGeocoder(geocoder)
 	fmt.Println("Rebuilding the index from", cfg.DataDir, "…")
 	start := time.Now()
 	stats, err := lib.Rebuild(context.Background(), func(s library.RebuildStats) {

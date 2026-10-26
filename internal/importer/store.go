@@ -225,6 +225,8 @@ func (s *storeSink) storeMemory(im *Memory) error {
 		os.RemoveAll(dir)
 		return errSkip
 	}
+	library.PlaceFromMedia(mem)
+	s.m.lib.FillPlace(mem.Place)
 	if err := s.m.lib.SaveMemory(rel, mem); err != nil {
 		return err
 	}

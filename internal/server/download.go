@@ -50,8 +50,12 @@ func (s *Server) downloadFile(ctx context.Context, mem *library.Memory, rel stri
 	dir := s.deps.Library.MemoryDir(rel)
 	src := filepath.Join(dir, md.File)
 	ext := strings.ToLower(filepath.Ext(md.File))
+	// The file's own time is the most precise, unless the memory's time
+	// was edited: then the edit counts.
+	editedTime := mem.Original != nil && !mem.Original.TakenAt.Equal(mem.TakenAt)
+	editedPlace := mem.Original != nil && !samePlace(mem.Original.Place, mem.Place)
 	taken := mem.TakenAt
-	if md.TakenAt != nil {
+	if md.TakenAt != nil && !editedTime {
 		taken = *md.TakenAt
 	}
 	local := taken.In(s.deps.Library.Location(mem.TZ))
@@ -82,8 +86,11 @@ func (s *Server) downloadFile(ctx context.Context, mem *library.Memory, rel stri
 	}
 
 	lat, lon := md.Lat, md.Lon
-	if (lat == nil || lon == nil) && mem.Place.HasCoordinates() {
-		lat, lon = mem.Place.Lat, mem.Place.Lon
+	if editedPlace || lat == nil || lon == nil {
+		lat, lon = nil, nil
+		if mem.Place.HasCoordinates() {
+			lat, lon = mem.Place.Lat, mem.Place.Lon
+		}
 	}
 	text := md.Text
 	if text == "" {

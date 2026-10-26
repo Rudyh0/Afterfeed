@@ -1,0 +1,12 @@
+{
+  "name": "afterfeed-geodata",
+  "private": true,
+  "description": "Builds internal/geo/cities.tsv.gz from GeoNames data (CC BY 4.0) via the all-the-cities package.",
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs ../../internal/geo/cities.tsv.gz"
+  },
+  "dependencies": {
+    "all-the-cities": "3.1.0"
+  }
+}

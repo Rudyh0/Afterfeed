@@ -310,5 +310,9 @@
       grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 10px;
     }
+
+    .none {
+      height: 96px;
+    }
   }
 </style>

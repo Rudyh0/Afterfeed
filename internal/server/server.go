@@ -90,6 +90,8 @@ func (s *Server) routes() {
 	s.importRoutes()
 	s.mediaRoutes()
 	s.memoryRoutes()
+	s.editRoutes()
+	s.mapRoutes()
 
 	m.HandleFunc("/api/", func(w http.ResponseWriter, r *http.Request) {
 		writeError(w, r, errNotFound())
