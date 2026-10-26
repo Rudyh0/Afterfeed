@@ -72,8 +72,11 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+      # Updating the description needs a token with more rights than
+      # pushing; a failure here should not stop the release.
       - name: Update the Docker Hub description
         if: env.HAS_DOCKERHUB == 'true'
+        continue-on-error: true
         uses: peter-evans/dockerhub-description@v5
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
