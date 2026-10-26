@@ -488,7 +488,12 @@
     "current_location": "Current location",
     "remove_media": "Remove {name}",
     "empty": "Add a photo, a video or some text.",
-    "take_photo": "Take a photo"
+    "take_photo": "Take a photo",
+    "date_from_photo": "Date and time from the photo",
+    "accuracy": "accurate to {meters} m",
+    "place_name": "Name of the place",
+    "place_name_optional": "Name of the place (optional)",
+    "unsupported": "Only photos and videos can be added."
   },
   "error": {
     "internal": "Something went wrong.",

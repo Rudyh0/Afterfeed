@@ -488,7 +488,12 @@
     "current_location": "Huidige locatie",
     "remove_media": "{name} verwijderen",
     "empty": "Voeg een foto, een video of wat tekst toe.",
-    "take_photo": "Foto maken"
+    "take_photo": "Foto maken",
+    "date_from_photo": "Datum en tijd uit de foto",
+    "accuracy": "tot op {meters} m nauwkeurig",
+    "place_name": "Naam van de plek",
+    "place_name_optional": "Naam van de plek (optioneel)",
+    "unsupported": "Alleen foto’s en video’s kunnen worden toegevoegd."
   },
   "error": {
     "internal": "Er ging iets mis.",

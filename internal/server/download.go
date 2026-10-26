@@ -137,9 +137,10 @@ func (s *Server) writeMetadata(ctx context.Context, path, kind string, local tim
 			args = append(args, "-XMP-dc:Description="+text)
 		}
 	case kind == "video" && (ext == ".mp4" || ext == ".mov" || ext == ".m4v"):
-		utc := local.UTC().Format("2006:01:02 15:04:05")
-		args = append(args, "-api", "QuickTimeUTC=1", "-QuickTime:CreateDate="+utc, "-QuickTime:ModifyDate="+utc,
-			"-Keys:CreationDate="+stamp+zone)
+		// With QuickTimeUTC, exiftool stores the time in UTC as the format
+		// requires; the zone tells it which time this is.
+		args = append(args, "-api", "QuickTimeUTC=1", "-QuickTime:CreateDate="+stamp+zone,
+			"-QuickTime:ModifyDate="+stamp+zone, "-Keys:CreationDate="+stamp+zone)
 		if lat != nil && lon != nil {
 			args = append(args, fmt.Sprintf("-Keys:GPSCoordinates=%f, %f", *lat, *lon))
 		}

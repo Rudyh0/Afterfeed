@@ -488,7 +488,12 @@
     "current_location": "Position actuelle",
     "remove_media": "Retirer {name}",
     "empty": "Ajoutez une photo, une vidéo ou du texte.",
-    "take_photo": "Prendre une photo"
+    "take_photo": "Prendre une photo",
+    "date_from_photo": "Date et heure de la photo",
+    "accuracy": "précision de {meters} m",
+    "place_name": "Nom du lieu",
+    "place_name_optional": "Nom du lieu (facultatif)",
+    "unsupported": "Seules les photos et les vidéos peuvent être ajoutées."
   },
   "error": {
     "internal": "Une erreur s’est produite.",
