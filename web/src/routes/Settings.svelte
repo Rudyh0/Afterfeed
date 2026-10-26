@@ -5,7 +5,7 @@
   import TwoFactor from '../components/TwoFactor.svelte'
   import { ApiError, get, patch, post } from '../lib/api'
   import { errorMessage } from '../lib/errors'
-  import { locale, localeNames, locales, setLocale, t, type Locale } from '../lib/i18n/index.svelte'
+  import { formatShortDate, locale, localeNames, locales, setLocale, t, type Locale } from '../lib/i18n/index.svelte'
   import { navigate, type Params } from '../lib/router.svelte'
   import { session } from '../lib/session.svelte'
   import { hideSplash } from '../lib/splash'
@@ -24,6 +24,17 @@
   let mapError = $state('')
   let mapSaved = $state(false)
   let autolock = $state(5)
+  interface ImportSummary {
+    id: number
+    platform: string
+    status: 'queued' | 'running' | 'needs_parts' | 'done' | 'failed' | 'cancelled'
+    phase: string
+    created_at: string
+    finished_at?: string
+    report?: { new: number; new_conversations: number }
+  }
+
+  let imports = $state<ImportSummary[] | null>(null)
   let pinSet = $state<boolean | null>(null)
   let pinOpen = $state(false)
   let pinCurrent = $state('')
@@ -47,6 +58,7 @@
       styleUrl = settings.map.style_url
       autolock = settings.vault.autolock_minutes
       pinSet = (await get<{ pin_set: boolean }>('/vault')).pin_set
+      imports = (await get<{ imports: ImportSummary[] }>('/imports')).imports
     } finally {
       hideSplash()
     }
@@ -96,6 +108,24 @@
       pinError = errorMessage(err)
     } finally {
       pinBusy = false
+    }
+  }
+
+  function importLine(i: ImportSummary): string {
+    switch (i.status) {
+      case 'done': {
+        const parts = [t('settings.import_new', { count: i.report?.new ?? 0 })]
+        if (i.report?.new_conversations) parts.push(t('count.conversations', { count: i.report.new_conversations }))
+        return parts.join(' · ')
+      }
+      case 'needs_parts':
+        return t('settings.import_needs_parts')
+      case 'failed':
+        return t('takein.report_failed')
+      case 'cancelled':
+        return t('settings.import_cancelled')
+      default:
+        return t(`takein.phase.${i.phase || 'queued'}`)
     }
   }
 
@@ -279,11 +309,40 @@
     {/snippet}
   </Dialog>
 
+  <section id="sources" class="card section" aria-labelledby="h-sources">
+    <h2 id="h-sources">{t('settings.sources')}</h2>
+    {#if imports && imports.length > 0}
+      <p class="label">{t('settings.import_history')}</p>
+      <ul class="imports">
+        {#each imports as i (i.id)}
+          <li>
+            <a href={`/take-in/import/${i.id}`}>
+              <span class="import-text">
+                <span class="import-title">{i.platform ? t(`platform.${i.platform}`) : t('common.unknown')} <span class="sub tabular">{formatShortDate(i.finished_at || i.created_at)}</span></span>
+                <span class="sub" class:attention={i.status === 'needs_parts' || i.status === 'failed'}>{importLine(i)}</span>
+              </span>
+              <Icon name="chevron-right" size={18} />
+            </a>
+          </li>
+        {/each}
+      </ul>
+    {:else if imports}
+      <p class="sub">{t('settings.no_imports')}</p>
+    {/if}
+    <div class="actions">
+      <a class="btn" href="/take-in/sources"><Icon name="plus" size={18} />{t('nav.add_source')}</a>
+    </div>
+  </section>
+
   <section id="about" class="card section" aria-labelledby="h-about">
     <h2 id="h-about">{t('settings.about')}</h2>
     <div class="about-row">
       <span class="sub">{t('settings.version')}</span>
       <span class="tabular">{session.version}</span>
+    </div>
+    <div class="about-row">
+      <span class="sub">{t('settings.place_names')}</span>
+      <a class="link inline" href="https://www.geonames.org" target="_blank" rel="noreferrer">GeoNames (CC BY 4.0)</a>
     </div>
     <a class="link" href="https://rudyh0.github.io/Afterfeed/" target="_blank" rel="noreferrer">{t('settings.docs_link')}</a>
   </section>
@@ -375,8 +434,64 @@
 
   .about-row {
     display: flex;
+    align-items: center;
     justify-content: space-between;
     gap: 12px;
+  }
+
+  .link.inline {
+    min-height: 0;
+  }
+
+  .imports {
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .imports li + li {
+    border-top: 1px solid var(--divider);
+  }
+
+  .imports a {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 0;
+    color: var(--text);
+    text-decoration: none;
+  }
+
+  .imports a:hover .import-title {
+    text-decoration: underline;
+  }
+
+  .imports a :global(svg) {
+    color: var(--text-muted);
+  }
+
+  .import-text {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .import-title {
+    font-size: 15px;
+    font-weight: 600;
+  }
+
+  .import-title .sub {
+    margin-left: 6px;
+    font-weight: 400;
+  }
+
+  .attention {
+    color: var(--danger);
   }
 
   @media (max-width: 600px) {

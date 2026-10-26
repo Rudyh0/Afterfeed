@@ -89,6 +89,7 @@
         attributionControl: { compact: true },
         dragRotate: false,
         pitchWithRotate: false,
+        locale: { 'NavigationControl.ZoomIn': t('map.zoom_in'), 'NavigationControl.ZoomOut': t('map.zoom_out') },
       })
       m.touchZoomRotate.disableRotation()
       m.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'bottom-right')
@@ -266,6 +267,8 @@
     return new Intl.DateTimeFormat(document.documentElement.lang, { month: 'long', year: 'numeric', timeZone: 'UTC' }).format(dateOnly(d))
   }
 </script>
+
+<h1 class="visually-hidden">{t('map.title')}</h1>
 
 {#if styleUrl === ''}
   <div class="off">

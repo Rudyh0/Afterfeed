@@ -5,6 +5,7 @@
   import * as maplibregl from 'maplibre-gl'
   import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?url'
   import { onDestroy, onMount } from 'svelte'
+  import { t } from '../lib/i18n/index.svelte'
 
   interface Props {
     styleUrl: string
@@ -28,6 +29,7 @@
       zoom: lat !== undefined ? 11 : 2,
       attributionControl: { compact: true },
       dragRotate: false,
+      locale: { 'NavigationControl.ZoomIn': t('map.zoom_in'), 'NavigationControl.ZoomOut': t('map.zoom_out') },
     })
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'bottom-right')
     map.on('click', (e) => {

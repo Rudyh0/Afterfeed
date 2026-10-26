@@ -27,10 +27,14 @@ Afterfeed is not a social network. It has no followers, likes, comments, sharing
 
 ## How it runs
 
-Afterfeed is a single Docker container with a built-in database. It needs no external services. Everything stays on your server, in a folder structure you can read without Afterfeed.
+Afterfeed is a single Docker container with a built-in database. It needs no external services. Your archive stays on your server, in a folder structure you can read without Afterfeed. The only outside connection is the map, which loads map images from a map server; you can [run your own or turn the map off](/configuration/map).
 
 Afterfeed is aimed at people who already run Docker, for example on a home server or a NAS. See [Install](/install/) to get started.
 
 ## Languages
 
 The app is available in English, Dutch, French, German and Spanish. This documentation is in English.
+
+## Credits
+
+Place names come from [GeoNames](https://www.geonames.org), licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). The default map is [OpenFreeMap](https://openfreemap.org) with data from [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors.

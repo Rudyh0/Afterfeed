@@ -17,7 +17,7 @@
 
 Afterfeed is a self-hosted archive for the photos, videos and posts you exported from social media. Import your data exports, close your accounts, and keep looking back at your own life on your own server.
 
-It is not a social network. There are no followers, likes, comments or sharing, and no algorithm deciding what you see. Everything runs in a single Docker container on your own hardware and nothing leaves it.
+It is not a social network. There are no followers, likes, comments or sharing, and no algorithm deciding what you see. Everything runs in a single Docker container on your own hardware, and your archive never leaves it.
 
 ## Features
 
@@ -26,7 +26,7 @@ It is not a social network. There are no followers, likes, comments or sharing, 
 - **Search** – across text, places, dates and sources, in five languages
 - **Map** – browse your memories by where they happened
 - **Messages** – a read-only archive of your conversations per platform, including voice messages and documents
-- **Vault** – keep memories out of your feed behind a PIN
+- **Vault** – keep memories and conversations out of sight behind a PIN
 - **Metadata editor** – fix dates, times and locations for one memory or a whole selection, with the original values kept
 - **Downloads** – save any photo or video to your device, with the correct date and location written into the file
 - **New memories** – add your own, privately
@@ -91,3 +91,5 @@ Please report vulnerabilities privately. See [SECURITY.md](SECURITY.md).
 ## License
 
 Afterfeed is licensed under the [GNU Affero General Public License v3.0](LICENSE).
+
+Place names come from [GeoNames](https://www.geonames.org), licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). The default map is [OpenFreeMap](https://openfreemap.org) with data from [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors.
