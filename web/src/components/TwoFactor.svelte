@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { copyText } from '../lib/clipboard'
   import QRCode from 'qrcode'
   import { get, post } from '../lib/api'
   import { errorMessage } from '../lib/errors'
@@ -112,12 +113,9 @@
 
   async function copyCommand() {
     if (!security) return
-    try {
-      await navigator.clipboard.writeText(security.reset_2fa_command)
+    if (await copyText(security.reset_2fa_command)) {
       copied = true
       setTimeout(() => (copied = false), 2000)
-    } catch {
-      // Clipboard not available over plain HTTP.
     }
   }
 </script>

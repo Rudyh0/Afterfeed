@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"log/slog"
 	"os"
 	"path"
 	"path/filepath"
@@ -185,6 +186,10 @@ func (t *Tree) addNested(zf *zip.File, outer io.ReaderAt, parent string) error {
 	if err != nil {
 		return err
 	}
+	// Unpacking a large inner zip file can take a while; say so in the log.
+	began := time.Now()
+	slog.Info("unpacking zip file inside the export", "name", name, "size", zf.UncompressedSize64)
+	defer func() { slog.Info("unpacked zip file", "name", name, "took", time.Since(began).Round(time.Second)) }()
 	rc, err := zf.Open()
 	if err != nil {
 		tmp.Close()

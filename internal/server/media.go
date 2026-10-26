@@ -201,13 +201,22 @@ func (s *Server) librarySummary(w http.ResponseWriter, r *http.Request) error {
 	var first, last sql.NullInt64
 	s.store.R.QueryRowContext(ctx, `SELECT COUNT(*), COUNT(DISTINCT year), MIN(year), MAX(year) FROM memories WHERE vault = 0`).
 		Scan(&total, &years, &first, &last)
-	writeJSON(w, http.StatusOK, map[string]any{
+	resp := map[string]any{
 		"sources":    sources,
 		"memories":   total,
 		"years":      years,
 		"first_year": first.Int64,
 		"last_year":  last.Int64,
 		"today":      time.Now().Format("2006-01-02"),
-	})
+	}
+	// A running import, so every screen can point to it.
+	var importID int64
+	if s.store.R.QueryRowContext(ctx, `SELECT id FROM imports WHERE status IN ('queued', 'running') ORDER BY id LIMIT 1`).
+		Scan(&importID) == nil && s.deps.Imports != nil {
+		if st, err := s.deps.Imports.Get(ctx, importID); err == nil {
+			resp["importing"] = map[string]any{"id": st.ID, "platform": st.Platform, "phase": st.Phase, "progress": st.Progress}
+		}
+	}
+	writeJSON(w, http.StatusOK, resp)
 	return nil
 }

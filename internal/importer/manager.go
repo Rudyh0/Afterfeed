@@ -51,11 +51,14 @@ type FileRef struct {
 
 // Status is the state of an import as shown in the web app.
 type Status struct {
-	ID         int64     `json:"id"`
-	Platform   string    `json:"platform"`
-	Status     string    `json:"status"`
-	Phase      string    `json:"phase"`
-	Progress   float64   `json:"progress"`
+	ID       int64   `json:"id"`
+	Platform string  `json:"platform"`
+	Status   string  `json:"status"`
+	Phase    string  `json:"phase"`
+	Progress float64 `json:"progress"`
+	// Done and Total count the items of the current phase while it runs.
+	Done       int       `json:"done,omitempty"`
+	Total      int       `json:"total,omitempty"`
 	Files      []FileRef `json:"files"`
 	Check      *Check    `json:"check,omitempty"`
 	Report     *Report   `json:"report,omitempty"`
@@ -123,6 +126,9 @@ type YearReport struct {
 
 const maxExamples = 50
 
+// maxLoggedProblems is how many unreadable files an import writes to the log.
+const maxLoggedProblems = 20
+
 // Error codes shown to the user.
 var (
 	ErrEmpty           = errors.New("import.empty")
@@ -144,17 +150,12 @@ type Manager struct {
 	wake chan struct{}
 
 	mu      sync.Mutex
-	live    map[int64]*liveState
+	lives   map[int64]*liveState
 	cancels map[int64]context.CancelFunc
 
 	previewWake chan struct{}
 	detectCache sync.Map
 	running     sync.WaitGroup
-}
-
-type liveState struct {
-	phase    string
-	progress float64
 }
 
 // NewManager creates the import manager.
@@ -164,7 +165,7 @@ func NewManager(cfg *config.Config, st *store.Store, lib *library.Library, ms *m
 		importers:   map[string]Importer{},
 		order:       importers,
 		wake:        make(chan struct{}, 1),
-		live:        map[int64]*liveState{},
+		lives:       map[int64]*liveState{},
 		cancels:     map[int64]context.CancelFunc{},
 		previewWake: make(chan struct{}, 1),
 	}
@@ -400,38 +401,12 @@ func (m *Manager) scanStatus(rows *sql.Rows) ([]*Status, error) {
 			json.Unmarshal([]byte(report.String), s.Report)
 		}
 		s.FinishedAt = finished.String
-		m.mu.Lock()
-		if l := m.live[s.ID]; l != nil && s.Status == StatusRunning {
-			s.Phase, s.Progress = l.phase, l.progress
+		if l := m.liveSnapshot(s.ID); l != nil && s.Status == StatusRunning {
+			s.Phase, s.Progress, s.Done, s.Total = l.phase, l.progress, l.done, l.total
 		}
-		m.mu.Unlock()
 		out = append(out, &s)
 	}
 	return out, rows.Err()
-}
-
-func (m *Manager) setLive(id int64, phase string, progress float64) {
-	m.mu.Lock()
-	l := m.live[id]
-	if l == nil {
-		l = &liveState{}
-		m.live[id] = l
-	}
-	l.phase, l.progress = phase, min(max(progress, 0), 1)
-	m.mu.Unlock()
-}
-
-func (m *Manager) persistLive(ctx context.Context, id int64) {
-	m.mu.Lock()
-	l := m.live[id]
-	var phase string
-	var progress float64
-	if l != nil {
-		phase, progress = l.phase, l.progress
-	}
-	m.mu.Unlock()
-	m.st.W.ExecContext(ctx, `UPDATE imports SET phase = ?, progress = ?, updated_at = ? WHERE id = ?`,
-		phase, progress, store.Now(), id)
 }
 
 // run performs one import.
@@ -451,7 +426,7 @@ func (m *Manager) run(parent context.Context, id int64) {
 		cancel()
 		m.mu.Lock()
 		delete(m.cancels, id)
-		delete(m.live, id)
+		delete(m.lives, id)
 		m.mu.Unlock()
 	}()
 
@@ -460,26 +435,21 @@ func (m *Manager) run(parent context.Context, id int64) {
 		WHERE id = ?`, StatusRunning, PhaseOpening, now, now, id)
 	m.setLive(id, PhaseOpening, 0)
 
-	// Persist progress every second so a reload shows it.
-	stopTicker := make(chan struct{})
-	go func() {
-		t := time.NewTicker(time.Second)
-		defer t.Stop()
-		for {
-			select {
-			case <-stopTicker:
-				return
-			case <-ctx.Done():
-				return
-			case <-t.C:
-				m.persistLive(ctx, id)
-			}
-		}
-	}()
+	// Save progress every second so a reload shows it, and log it.
+	stopReport := make(chan struct{})
+	go m.report(ctx, id, stopReport)
 
-	slog.Info("import started", "id", id, "platform", st.Platform, "files", len(st.Files))
+	var size int64
+	names := make([]string, 0, len(st.Files))
+	for _, f := range st.Files {
+		size += f.Size
+		names = append(names, f.Name)
+	}
+	slog.Info("import started", "id", id, "platform", st.Platform, "files", len(st.Files), "size", humanBytes(size),
+		"names", strings.Join(names, ", "))
+	began := time.Now()
 	status, check, report, runErr := m.execute(ctx, st, force)
-	close(stopTicker)
+	close(stopReport)
 
 	finish := func(status, errMsg string) {
 		var checkJSON, reportJSON any
@@ -512,17 +482,21 @@ func (m *Manager) run(parent context.Context, id int64) {
 	case runErr == nil:
 		finish(status, "")
 		if status == StatusDone {
-			slog.Info("import done", "id", id, "new", report.New, "existing", report.Existing, "messages", report.Messages)
+			slog.Info("import done", "id", id, "new", report.New, "existing", report.Existing, "updated", report.Updated,
+				"conversations", report.Conversations, "messages", report.Messages, "problems", report.Problems,
+				"took", roundDuration(time.Since(began)))
 			m.removeUploads(context.WithoutCancel(ctx), st.Files)
 			m.kickPreviews()
 		}
 	case parent.Err() != nil:
 		// Afterfeed is stopping: start again next time.
+		slog.Info("import interrupted; it continues when Afterfeed starts again", "id", id)
 		finish(StatusQueued, "")
 	case ctx.Err() != nil:
+		slog.Info("import cancelled", "id", id)
 		finish(StatusCancelled, "")
 	default:
-		slog.Warn("import failed", "id", id, "err", runErr)
+		slog.Warn("import failed", "id", id, "err", runErr, "took", roundDuration(time.Since(began)))
 		finish(StatusFailed, errorCode(runErr))
 	}
 }
@@ -555,6 +529,7 @@ func (m *Manager) execute(ctx context.Context, st *Status, force bool) (string, 
 	}
 	tmp := filepath.Join(m.cfg.StagingDir(), fmt.Sprintf("import-%d", st.ID))
 	defer os.RemoveAll(tmp)
+	began := time.Now()
 	tree, err := archive.Open(paths, tmp)
 	if err != nil {
 		if errors.Is(err, archive.ErrNotZip) {
@@ -563,14 +538,20 @@ func (m *Manager) execute(ctx context.Context, st *Status, force bool) (string, 
 		return "", nil, nil, err
 	}
 	defer tree.Close()
+	slog.Info("import files opened", "id", st.ID, "parts", len(tree.Parts), "entries", len(tree.Files()),
+		"took", roundDuration(time.Since(began)))
 
 	// First pass: read everything without storing, to find missing files.
+	began = time.Now()
 	m.setLive(st.ID, PhaseReading, 0)
-	cs := newCheckSink(m, st.Platform, func(p float64) { m.setLive(st.ID, PhaseReading, p) })
+	cs := newCheckSink(m, st.Platform, func(done, total int) { m.setCounts(st.ID, done, total) })
 	if err := im.Read(ctx, tree, cs); err != nil {
 		return "", nil, nil, err
 	}
 	check := cs.result()
+	slog.Info("import export read", "id", st.ID, "memories", check.Memories, "photos", check.Photos, "videos", check.Videos,
+		"conversations", check.Conversations, "messages", check.Messages, "missing", check.Missing,
+		"problems", check.Problems, "took", roundDuration(time.Since(began)))
 	if check.Memories == 0 && check.Conversations == 0 {
 		if htmlOnly(tree) {
 			return "", check, nil, ErrHTMLFormat
@@ -578,13 +559,18 @@ func (m *Manager) execute(ctx context.Context, st *Status, force bool) (string, 
 		return "", check, nil, ErrEmpty
 	}
 	if check.Missing > 0 && !force {
+		slog.Info("import waiting for the remaining files", "id", st.ID, "missing", check.Missing,
+			"examples", strings.Join(check.MissingExamples[:min(3, len(check.MissingExamples))], ", "))
 		return StatusNeedsParts, check, nil, nil
 	}
 
 	// Second pass: store.
+	began = time.Now()
+	total := check.Memories + check.Conversations
 	m.setLive(st.ID, PhaseCopying, 0)
-	ss := newStoreSink(ctx, m, st.ID, st.Platform, check.Memories+check.Conversations,
-		func(p float64) { m.setLive(st.ID, PhaseCopying, p) })
+	m.setCounts(st.ID, 0, total)
+	slog.Info("import copying", "id", st.ID, "items", total)
+	ss := newStoreSink(ctx, m, st.ID, st.Platform, total, func(done, total int) { m.setCounts(st.ID, done, total) })
 	readErr := im.Read(ss.ctx, tree, ss)
 	report, storeErr := ss.finish()
 	if storeErr != nil {
@@ -595,6 +581,7 @@ func (m *Manager) execute(ctx context.Context, st *Status, force bool) (string, 
 	}
 	report.Missing, report.MissingExamples = check.Missing, check.MissingExamples
 
+	slog.Info("import copied", "id", st.ID, "took", roundDuration(time.Since(began)))
 	m.setLive(st.ID, PhaseIndexing, 0.5)
 	if err := m.lib.RefreshMonthStats(ctx); err != nil {
 		return "", check, nil, err
@@ -621,7 +608,7 @@ func htmlOnly(tree *archive.Tree) bool {
 type checkSink struct {
 	m        *Manager
 	platform string
-	progress func(float64)
+	progress func(done, total int)
 
 	mu    sync.Mutex
 	c     Check
@@ -630,7 +617,7 @@ type checkSink struct {
 	last  time.Time
 }
 
-func newCheckSink(m *Manager, platform string, progress func(float64)) *checkSink {
+func newCheckSink(m *Manager, platform string, progress func(done, total int)) *checkSink {
 	return &checkSink{m: m, platform: platform, progress: progress, years: map[int]int{}}
 }
 
@@ -710,12 +697,14 @@ func (s *checkSink) Problem(path string, err error) {
 	if len(s.c.ProblemExamples) < maxExamples {
 		s.c.ProblemExamples = append(s.c.ProblemExamples, Problem{Path: path, Error: err.Error()})
 	}
-	slog.Debug("import problem", "path", path, "err", err)
+	if s.c.Problems <= maxLoggedProblems {
+		slog.Warn("import problem", "path", path, "err", err)
+	}
 }
 
 func (s *checkSink) Progress(done, total int) {
 	if total > 0 && s.progress != nil {
-		s.progress(float64(done) / float64(total))
+		s.progress(done, total)
 	}
 }
 

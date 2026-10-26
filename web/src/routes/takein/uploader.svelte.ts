@@ -6,6 +6,7 @@
 // between Take-in steps.
 
 import { ApiError, del, get, post } from '../../lib/api'
+import { randomId } from '../../lib/id'
 
 export type PartStatus = 'waiting' | 'uploading' | 'paused' | 'done' | 'error'
 
@@ -89,7 +90,7 @@ export async function addFiles(files: Iterable<File>, platform: string) {
   for (const file of files) {
     if (!isZip(file)) {
       uploader.parts.push({
-        key: `local:${crypto.randomUUID()}`,
+        key: `local:${randomId()}`,
         kind: 'upload',
         name: file.name,
         size: file.size,
@@ -119,7 +120,7 @@ export async function addFiles(files: Iterable<File>, platform: string) {
       if (!existing) uploader.parts.push(part)
     } catch (err) {
       uploader.parts.push({
-        key: `local:${crypto.randomUUID()}`,
+        key: `local:${randomId()}`,
         kind: 'upload',
         name: file.name,
         size: file.size,

@@ -36,7 +36,7 @@ Uploads continue where they stopped if the connection drops or you close the bro
 
 ## 5. The import
 
-Afterfeed reads the posts, copies the photos and videos out of the zip files, matches each file with its date, location and description, and stores the chats. You can close the browser while it runs. Previews are prepared in the background afterwards.
+Afterfeed reads the posts, copies the photos and videos out of the zip files, matches each file with its date, location and description, and stores the chats. The screen shows how far it is. You can close the tab and come back later: the import continues on the server, and every screen of the app shows its progress. Previews are prepared in the background afterwards. To follow an import in detail, see [An import seems to take forever](/maintenance/troubleshooting#an-import-seems-to-take-forever).
 
 ## 6. The report
 

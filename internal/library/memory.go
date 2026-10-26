@@ -182,12 +182,19 @@ func (l *Library) MemoryDir(rel string) string {
 	return filepath.Join(l.memories, filepath.FromSlash(rel))
 }
 
+// MemoryRel returns the folder of a memory, relative to the memories
+// folder. It depends only on the time, platform and ID, so an import that
+// was interrupted finds the same folder again.
+func (l *Library) MemoryRel(m *Memory) string {
+	local := m.TakenAt.In(l.Location(m.TZ))
+	name := fmt.Sprintf("%s-%s-%s", local.Format("20060102-150405"), m.Platform, m.ID[:8])
+	return local.Format("2006") + "/" + name
+}
+
 // CreateMemoryDir creates a new folder for a memory, named after its date,
 // platform and id, and returns its path relative to the memories folder.
 func (l *Library) CreateMemoryDir(m *Memory) (string, error) {
-	local := m.TakenAt.In(l.Location(m.TZ))
-	name := fmt.Sprintf("%s-%s-%s", local.Format("20060102-150405"), m.Platform, m.ID[:8])
-	rel := local.Format("2006") + "/" + name
+	rel := l.MemoryRel(m)
 	if err := os.MkdirAll(l.MemoryDir(rel), 0o755); err != nil {
 		return "", err
 	}

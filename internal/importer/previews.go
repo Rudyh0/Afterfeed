@@ -89,6 +89,26 @@ func (m *Manager) preparePreviews(ctx context.Context) error {
 	slog.Info("preparing previews", "count", len(jobs))
 	previewsLeft.Store(int64(len(jobs)))
 	defer previewsLeft.Store(0)
+	began := time.Now()
+	stopLog := make(chan struct{})
+	defer close(stopLog)
+	go func() {
+		t := time.NewTicker(30 * time.Second)
+		defer t.Stop()
+		for {
+			select {
+			case <-stopLog:
+				return
+			case <-t.C:
+				slog.Info("preparing previews", "left", previewsLeft.Load(), "of", len(jobs))
+			}
+		}
+	}()
+	defer func() {
+		if ctx.Err() == nil && previewsLeft.Load() == 0 {
+			slog.Info("previews ready", "count", len(jobs), "took", time.Since(began).Round(time.Second))
+		}
+	}()
 
 	ch := make(chan previewJob)
 	var wg sync.WaitGroup

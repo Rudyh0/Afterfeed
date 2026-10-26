@@ -164,7 +164,11 @@ func securityHeaders(next http.Handler) http.Handler {
 		h.Set("Referrer-Policy", "no-referrer")
 		h.Set("X-Frame-Options", "DENY")
 		h.Set("Permissions-Policy", "camera=(), microphone=(), geolocation=(self)")
-		h.Set("Cross-Origin-Opener-Policy", "same-origin")
+		// Browsers ignore this header on plain http and warn about it in the
+		// console, so it is only sent over https.
+		if r.TLS != nil || strings.EqualFold(r.Header.Get("X-Forwarded-Proto"), "https") {
+			h.Set("Cross-Origin-Opener-Policy", "same-origin")
+		}
 		h.Set("Content-Security-Policy", contentSecurityPolicy())
 		next.ServeHTTP(w, r)
 	})

@@ -273,7 +273,13 @@ func (s *Server) mapBounds(w http.ResponseWriter, r *http.Request) error {
 }
 
 func (s *Server) geoSearch(w http.ResponseWriter, r *http.Request) error {
-	hits := geo.Default().Search(r.URL.Query().Get("q"), 8)
+	country := r.URL.Query().Get("country")
+	if country == "" {
+		// Prefer the country where most memories are.
+		s.store.R.QueryRowContext(r.Context(), `SELECT country_code FROM memories WHERE country_code != ''
+			GROUP BY country_code ORDER BY COUNT(*) DESC LIMIT 1`).Scan(&country)
+	}
+	hits := geo.Default().SearchIn(r.URL.Query().Get("q"), 8, country)
 	if hits == nil {
 		hits = []geo.Place{}
 	}

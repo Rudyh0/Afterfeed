@@ -123,6 +123,12 @@ func (x *Index) Nearest(lat, lon, maxKm float64) (Place, bool) {
 
 // Search returns places whose name starts with q, the largest first.
 func (x *Index) Search(q string, limit int) []Place {
+	return x.SearchIn(q, limit, "")
+}
+
+// SearchIn is Search with a preference for places in one country, such as
+// the country where most memories are. Exact matches still come first.
+func (x *Index) SearchIn(q string, limit int, country string) []Place {
 	q = Fold(strings.TrimSpace(q))
 	if q == "" {
 		return nil
@@ -133,14 +139,22 @@ func (x *Index) Search(q string, limit int) []Place {
 			hits = append(hits, i)
 		}
 	}
-	sort.Slice(hits, func(a, b int) bool {
-		pa, pb := x.places[hits[a]], x.places[hits[b]]
-		// Exact matches first, then by size.
+	country = strings.ToUpper(country)
+	score := func(i int) float64 {
+		p := x.places[i]
+		s := math.Log10(float64(p.Pop) + 1)
+		if country != "" && p.Country == country {
+			s += 1.5
+		}
+		return s
+	}
+	sort.SliceStable(hits, func(a, b int) bool {
+		// Exact matches first, then by size, with a head start for the country.
 		ea, eb := x.folded[hits[a]] == q, x.folded[hits[b]] == q
 		if ea != eb {
 			return ea
 		}
-		return pa.Pop > pb.Pop
+		return score(hits[a]) > score(hits[b])
 	})
 	out := make([]Place, 0, min(limit, len(hits)))
 	for _, i := range hits {

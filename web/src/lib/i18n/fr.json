@@ -18,7 +18,8 @@
     "more": "Plus",
     "archive": "Archive",
     "add_source": "Ajouter une source",
-    "own_memories": "Mes souvenirs"
+    "own_memories": "Mes souvenirs",
+    "importing": "Import {platform} en cours"
   },
   "common": {
     "cancel": "Annuler",
@@ -160,7 +161,9 @@
     "pick_on_map": "Cliquez sur la carte pour choisir le lieu",
     "invalid_date": "Saisissez une date valide",
     "invalid_time": "Saisissez une heure valide",
-    "server_tz": "Fuseau horaire du serveur ({tz})"
+    "server_tz": "Fuseau horaire du serveur ({tz})",
+    "choose_from_list": "Choisissez un lieu dans la liste.",
+    "no_places": "Aucun lieu trouvé pour « {q} »"
   },
   "bulk": {
     "title_one": "Modifier {count} souvenir",
@@ -392,7 +395,7 @@
     "cancel_import": "Arrêter l’import",
     "cancelled_title": "Import arrêté",
     "cancelled_body": "Ce qui a déjà été importé est conservé. Importer à nouveau les mêmes fichiers reprend là où l’import s’est arrêté.",
-    "close_page": "Vous pouvez fermer cette page ; l’import continue sur le serveur.",
+    "close_page": "Vous pouvez fermer cet onglet et revenir plus tard. L’import continue sur le serveur.",
     "stat_new_memories": "Nouveaux souvenirs",
     "stat_photos": "Photos",
     "stat_videos": "Vidéos",
@@ -404,7 +407,11 @@
     "report_check_years": "Vérifiez que chaque année attendue est présente avant de fermer le compte.",
     "done_title": "Configuration terminée",
     "done_body": "Ajoutez des sources à tout moment avec {action} dans le menu.",
-    "upload_more": "Ajouter d’autres fichiers"
+    "upload_more": "Ajouter d’autres fichiers",
+    "patience": "Merci de patienter. Cela peut prendre un moment, selon la taille de votre export.",
+    "importing_any": "Votre export est en cours d’import",
+    "count_of": "{done} sur {total}",
+    "reconnecting": "Pas de connexion au serveur. Nouvelle tentative…"
   },
   "settings": {
     "title": "Réglages",
@@ -478,7 +485,7 @@
     "save": "Enregistrer le souvenir",
     "saving": "Enregistrement",
     "use_current_location": "Utiliser la position actuelle",
-    "enter_location": "Saisir un lieu",
+    "enter_location": "Chercher un lieu",
     "locating": "Recherche de votre position",
     "location_https_only": "Votre position actuelle n’est disponible que si Afterfeed est ouvert en HTTPS.",
     "location_denied": "Le navigateur n’a pas partagé votre position.",
@@ -488,8 +495,6 @@
     "take_photo": "Prendre une photo",
     "date_from_photo": "Date et heure de la photo",
     "accuracy": "précision de {meters} m",
-    "place_name": "Nom du lieu",
-    "place_name_optional": "Nom du lieu (facultatif)",
     "unsupported": "Seules les photos et les vidéos peuvent être ajoutées."
   },
   "error": {

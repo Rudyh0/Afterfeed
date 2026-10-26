@@ -36,7 +36,7 @@ type storeSink struct {
 	importID int64
 	platform string
 	total    int
-	progress func(float64)
+	progress func(done, total int)
 
 	memCh chan *Memory
 	idxCh chan prepared
@@ -59,7 +59,7 @@ type prepared struct {
 	year int
 }
 
-func newStoreSink(parent context.Context, m *Manager, importID int64, platform string, total int, progress func(float64)) *storeSink {
+func newStoreSink(parent context.Context, m *Manager, importID int64, platform string, total int, progress func(done, total int)) *storeSink {
 	ctx, cancel := context.WithCancelCause(parent)
 	s := &storeSink{
 		ctx: ctx, cancel: cancel, m: m, importID: importID, platform: platform,
@@ -88,8 +88,8 @@ func (s *storeSink) fail(err error) {
 
 func (s *storeSink) tick() {
 	n := s.done.Add(1)
-	if s.progress != nil && n%10 == 0 {
-		s.progress(float64(n) / float64(s.total))
+	if s.progress != nil {
+		s.progress(int(n), s.total)
 	}
 }
 
@@ -151,7 +151,7 @@ func (s *storeSink) storeMemory(im *Memory) error {
 		return err
 	}
 	if rel != "" {
-		return s.mergeMemory(rel, im)
+		return s.mergeMemory(rel, im, false)
 	}
 
 	takenAt := im.TakenAt
@@ -202,6 +202,14 @@ func (s *storeSink) storeMemory(im *Memory) error {
 		return errSkip
 	}
 
+	// An import that was interrupted may have saved this memory without
+	// indexing it. Continue from that folder instead of copying again.
+	if existing := s.m.lib.MemoryRel(mem); fileExists(filepath.Join(s.m.lib.MemoryDir(existing), "memory.json")) {
+		return s.mergeMemory(existing, im, true)
+	}
+
+	// A folder without memory.json is what an interrupted copy left behind.
+	os.RemoveAll(s.m.lib.MemoryDir(s.m.lib.MemoryRel(mem)))
 	rel, err = s.m.lib.CreateMemoryDir(mem)
 	if err != nil {
 		return err
@@ -264,7 +272,9 @@ func (s *storeSink) storeMemory(im *Memory) error {
 // mergeMemory adds media that an earlier import did not have, for example
 // from a part that was missing then. Everything else, including the user's
 // edits, stays as it is.
-func (s *storeSink) mergeMemory(rel string, im *Memory) error {
+//
+// index is set for a memory that is on disk but not yet in the index.
+func (s *storeSink) mergeMemory(rel string, im *Memory, index bool) error {
 	mem, err := s.m.lib.LoadMemory(rel)
 	if err != nil {
 		return &problemError{rel, err}
@@ -290,19 +300,37 @@ func (s *storeSink) mergeMemory(rel string, im *Memory) error {
 	}
 	year := mem.TakenAt.In(s.m.lib.Location(mem.TZ)).Year()
 	s.mu.Lock()
-	s.report.Existing++
-	s.year(year).Existing++
-	if added > 0 {
-		s.report.Updated++
+	if index {
+		// Left by an interrupted import: new to the archive.
+		yr := s.year(year)
+		yr.New++
+		s.report.New++
+		for _, md := range mem.Media {
+			if md.Kind == string(media.Video) {
+				yr.Videos++
+				s.report.Videos++
+			} else {
+				yr.Photos++
+				s.report.Photos++
+			}
+		}
+	} else {
+		s.report.Existing++
+		s.year(year).Existing++
+		if added > 0 {
+			s.report.Updated++
+		}
 	}
 	s.mu.Unlock()
-	if added == 0 {
+	if added == 0 && !index {
 		s.tick()
 		return nil
 	}
-	mem.UpdatedAt = time.Now().UTC()
-	if err := s.m.lib.SaveMemory(rel, mem); err != nil {
-		return err
+	if added > 0 {
+		mem.UpdatedAt = time.Now().UTC()
+		if err := s.m.lib.SaveMemory(rel, mem); err != nil {
+			return err
+		}
 	}
 	select {
 	case s.idxCh <- prepared{rel: rel, mem: mem, year: year}:
@@ -325,6 +353,8 @@ func (s *storeSink) year(y int) *YearReport {
 // its properties.
 func (s *storeSink) copyMedia(dir string, n int, memoryID string, md *Media) (library.Media, error) {
 	key := md.key()
+	s.m.startFile(s.importID, md.File.Path)
+	defer s.m.endFile(s.importID, md.File.Path)
 	t, name, size, sum, err := copyFile(s.ctx, md.File, dir, fmt.Sprintf("%02d", n))
 	if err != nil {
 		return library.Media{}, err
@@ -630,6 +660,8 @@ func (s *storeSink) copyMessageFile(dir, convID, msgKey string, f *Media) (libra
 		name = f.File.Name()
 	}
 	base := safeName(strings.TrimSuffix(f.File.Name(), path.Ext(f.File.Name())))
+	s.m.startFile(s.importID, f.File.Path)
+	defer s.m.endFile(s.importID, f.File.Path)
 	t, fname, size, _, err := copyFile(s.ctx, f.File, filepath.Join(dir, "files"), base)
 	if err != nil {
 		return library.MessageFile{}, err
@@ -709,7 +741,11 @@ func (s *storeSink) Problem(path string, err error) {
 	if len(s.report.ProblemExamples) < maxExamples {
 		s.report.ProblemExamples = append(s.report.ProblemExamples, Problem{Path: path, Error: err.Error()})
 	}
-	slog.Debug("import problem", "path", path, "err", err)
+	// The first problems were already logged in the first pass, but files can
+	// also fail while copying.
+	if s.report.Problems <= maxLoggedProblems {
+		slog.Warn("import problem", "path", path, "err", err)
+	}
 }
 
 // Progress is ignored in the second pass; progress follows stored items.

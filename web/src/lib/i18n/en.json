@@ -18,7 +18,8 @@
     "more": "More",
     "archive": "Archive",
     "add_source": "Add source",
-    "own_memories": "Own memories"
+    "own_memories": "Own memories",
+    "importing": "Importing {platform}"
   },
   "common": {
     "cancel": "Cancel",
@@ -160,7 +161,9 @@
     "pick_on_map": "Click the map to set the location",
     "invalid_date": "Enter a valid date",
     "invalid_time": "Enter a valid time",
-    "server_tz": "Time zone of the server ({tz})"
+    "server_tz": "Time zone of the server ({tz})",
+    "choose_from_list": "Choose a place from the list.",
+    "no_places": "No places found for “{q}”"
   },
   "bulk": {
     "title_one": "Edit {count} memory",
@@ -392,7 +395,7 @@
     "cancel_import": "Stop import",
     "cancelled_title": "Import stopped",
     "cancelled_body": "What was imported so far is kept. Importing the same files again continues where it stopped.",
-    "close_page": "You can close this page; the import continues on the server.",
+    "close_page": "You can close this tab and come back later. The import continues on the server.",
     "stat_new_memories": "New memories",
     "stat_photos": "Photos",
     "stat_videos": "Videos",
@@ -404,7 +407,11 @@
     "report_check_years": "Check that every year you expect is there before you close the account.",
     "done_title": "Set-up complete",
     "done_body": "Add sources at any time with {action} in the menu.",
-    "upload_more": "Add more files"
+    "upload_more": "Add more files",
+    "patience": "Please be patient. This can take a while, depending on the size of your export.",
+    "importing_any": "Your export is being imported",
+    "count_of": "{done} of {total}",
+    "reconnecting": "No connection to the server. Trying again…"
   },
   "settings": {
     "title": "Settings",
@@ -478,7 +485,7 @@
     "save": "Save memory",
     "saving": "Saving",
     "use_current_location": "Use current location",
-    "enter_location": "Enter a place",
+    "enter_location": "Search for a place",
     "locating": "Finding your location",
     "location_https_only": "Your current location is only available when Afterfeed is opened over HTTPS.",
     "location_denied": "The browser did not share your location.",
@@ -488,8 +495,6 @@
     "take_photo": "Take a photo",
     "date_from_photo": "Date and time from the photo",
     "accuracy": "accurate to {meters} m",
-    "place_name": "Name of the place",
-    "place_name_optional": "Name of the place (optional)",
     "unsupported": "Only photos and videos can be added."
   },
   "error": {

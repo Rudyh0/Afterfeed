@@ -18,7 +18,8 @@
     "more": "Meer",
     "archive": "Archief",
     "add_source": "Bron toevoegen",
-    "own_memories": "Eigen herinneringen"
+    "own_memories": "Eigen herinneringen",
+    "importing": "{platform} importeren"
   },
   "common": {
     "cancel": "Annuleren",
@@ -160,7 +161,9 @@
     "pick_on_map": "Klik op de kaart om de locatie te kiezen",
     "invalid_date": "Vul een geldige datum in",
     "invalid_time": "Vul een geldige tijd in",
-    "server_tz": "Tijdzone van de server ({tz})"
+    "server_tz": "Tijdzone van de server ({tz})",
+    "choose_from_list": "Kies een plaats uit de lijst.",
+    "no_places": "Geen plaatsen gevonden voor “{q}”"
   },
   "bulk": {
     "title_one": "{count} herinnering bewerken",
@@ -392,7 +395,7 @@
     "cancel_import": "Import stoppen",
     "cancelled_title": "Import gestopt",
     "cancelled_body": "Wat al geïmporteerd is, blijft staan. Importeer dezelfde bestanden opnieuw om verder te gaan.",
-    "close_page": "Je kunt deze pagina sluiten; het importeren gaat door op de server.",
+    "close_page": "Je kunt dit tabblad sluiten en later terugkomen. De import gaat door op de server.",
     "stat_new_memories": "Nieuwe herinneringen",
     "stat_photos": "Foto’s",
     "stat_videos": "Video’s",
@@ -404,7 +407,11 @@
     "report_check_years": "Controleer of elk jaar dat je verwacht erbij staat voordat je het account sluit.",
     "done_title": "Inrichting klaar",
     "done_body": "Voeg op elk moment bronnen toe met {action} in het menu.",
-    "upload_more": "Meer bestanden toevoegen"
+    "upload_more": "Meer bestanden toevoegen",
+    "patience": "Even geduld. Dit kan even duren, afhankelijk van de grootte van je export.",
+    "importing_any": "Je export wordt geïmporteerd",
+    "count_of": "{done} van {total}",
+    "reconnecting": "Geen verbinding met de server. Opnieuw proberen…"
   },
   "settings": {
     "title": "Instellingen",
@@ -478,7 +485,7 @@
     "save": "Herinnering opslaan",
     "saving": "Opslaan",
     "use_current_location": "Gebruik huidige locatie",
-    "enter_location": "Vul een plaats in",
+    "enter_location": "Zoek een plaats",
     "locating": "Locatie bepalen",
     "location_https_only": "Je huidige locatie is alleen beschikbaar als je Afterfeed via HTTPS opent.",
     "location_denied": "De browser heeft je locatie niet gedeeld.",
@@ -488,8 +495,6 @@
     "take_photo": "Foto maken",
     "date_from_photo": "Datum en tijd uit de foto",
     "accuracy": "tot op {meters} m nauwkeurig",
-    "place_name": "Naam van de plek",
-    "place_name_optional": "Naam van de plek (optioneel)",
     "unsupported": "Alleen foto’s en video’s kunnen worden toegevoegd."
   },
   "error": {

@@ -39,3 +39,14 @@ func TestSearch(t *testing.T) {
 		t.Errorf("chania = %+v", hits)
 	}
 }
+
+func TestSearchInCountry(t *testing.T) {
+	x := Default()
+	got := x.SearchIn("a", 3, "NL")
+	if len(got) == 0 || got[0].Country != "NL" {
+		t.Fatalf("expected a Dutch place first, got %+v", got)
+	}
+	if exact := x.SearchIn("paris", 1, "NL"); len(exact) == 0 || exact[0].Country != "FR" {
+		t.Fatalf("an exact, much larger match should still win: %+v", exact)
+	}
+}

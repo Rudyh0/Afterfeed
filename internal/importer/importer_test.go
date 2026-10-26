@@ -4,6 +4,7 @@ import (
 	"archive/zip"
 	"context"
 	"encoding/json"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"testing"
@@ -370,5 +371,49 @@ func TestUploadResume(t *testing.T) {
 	e.wait(t, id, importer.StatusDone)
 	if _, err := e.m.GetUpload(ctx, u.ID); err == nil {
 		t.Error("upload not removed after import")
+	}
+}
+
+// An import that stopped after saving memories but before indexing them
+// continues from the folders on disk, without copying the files twice.
+func TestResumeInterruptedImport(t *testing.T) {
+	e := newEnv(t)
+	ctx := context.Background()
+	part1, part2, _ := facebookExport(t, e.cfg.ImportDir)
+	refs := []importer.FileRef{{Kind: "folder", Path: filepath.Base(part1)}, {Kind: "folder", Path: filepath.Base(part2)}}
+	id, err := e.m.Create(ctx, "facebook", refs)
+	if err != nil {
+		t.Fatal(err)
+	}
+	e.wait(t, id, importer.StatusDone)
+	files := func() int {
+		n := 0
+		filepath.WalkDir(e.cfg.MemoriesDir(), func(p string, d fs.DirEntry, err error) error {
+			if err == nil && !d.IsDir() {
+				n++
+			}
+			return nil
+		})
+		return n
+	}
+	before := files()
+
+	// Forget the index, as if Afterfeed stopped before writing it.
+	if _, err := e.st.W.Exec(`DELETE FROM memories`); err != nil {
+		t.Fatal(err)
+	}
+	id, err = e.m.Create(ctx, "facebook", refs)
+	if err != nil {
+		t.Fatal(err)
+	}
+	st := e.wait(t, id, importer.StatusDone)
+	if st.Report.New != 5 || st.Report.Existing != 0 {
+		t.Errorf("new = %d, existing = %d, want 5 and 0", st.Report.New, st.Report.Existing)
+	}
+	if n := e.count(t, `SELECT COUNT(*) FROM memories`); n != 5 {
+		t.Errorf("indexed memories = %d, want 5", n)
+	}
+	if after := files(); after != before {
+		t.Errorf("files on disk = %d, want %d", after, before)
 	}
 }

@@ -18,7 +18,8 @@
     "more": "Mehr",
     "archive": "Archiv",
     "add_source": "Quelle hinzufügen",
-    "own_memories": "Eigene Erinnerungen"
+    "own_memories": "Eigene Erinnerungen",
+    "importing": "{platform} wird importiert"
   },
   "common": {
     "cancel": "Abbrechen",
@@ -160,7 +161,9 @@
     "pick_on_map": "Klicke auf die Karte, um den Ort festzulegen",
     "invalid_date": "Gib ein gültiges Datum ein",
     "invalid_time": "Gib eine gültige Uhrzeit ein",
-    "server_tz": "Zeitzone des Servers ({tz})"
+    "server_tz": "Zeitzone des Servers ({tz})",
+    "choose_from_list": "Wähle einen Ort aus der Liste.",
+    "no_places": "Keine Orte zu „{q}“ gefunden"
   },
   "bulk": {
     "title_one": "{count} Erinnerung bearbeiten",
@@ -392,7 +395,7 @@
     "cancel_import": "Import abbrechen",
     "cancelled_title": "Import abgebrochen",
     "cancelled_body": "Bereits Importiertes bleibt erhalten. Ein erneuter Import derselben Dateien macht dort weiter, wo er aufgehört hat.",
-    "close_page": "Du kannst diese Seite schließen; der Import läuft auf dem Server weiter.",
+    "close_page": "Du kannst diesen Tab schließen und später zurückkommen. Der Import läuft auf dem Server weiter.",
     "stat_new_memories": "Neue Erinnerungen",
     "stat_photos": "Fotos",
     "stat_videos": "Videos",
@@ -404,7 +407,11 @@
     "report_check_years": "Prüfe, ob jedes erwartete Jahr dabei ist, bevor du das Konto schließt.",
     "done_title": "Einrichtung abgeschlossen",
     "done_body": "Füge jederzeit Quellen über {action} im Menü hinzu.",
-    "upload_more": "Weitere Dateien hinzufügen"
+    "upload_more": "Weitere Dateien hinzufügen",
+    "patience": "Bitte etwas Geduld. Das kann je nach Größe deines Exports eine Weile dauern.",
+    "importing_any": "Dein Export wird importiert",
+    "count_of": "{done} von {total}",
+    "reconnecting": "Keine Verbindung zum Server. Neuer Versuch …"
   },
   "settings": {
     "title": "Einstellungen",
@@ -478,7 +485,7 @@
     "save": "Erinnerung speichern",
     "saving": "Wird gespeichert",
     "use_current_location": "Aktuellen Standort verwenden",
-    "enter_location": "Ort eingeben",
+    "enter_location": "Ort suchen",
     "locating": "Standort wird ermittelt",
     "location_https_only": "Dein aktueller Standort ist nur verfügbar, wenn Afterfeed über HTTPS geöffnet wird.",
     "location_denied": "Der Browser hat deinen Standort nicht freigegeben.",
@@ -488,8 +495,6 @@
     "take_photo": "Foto aufnehmen",
     "date_from_photo": "Datum und Uhrzeit aus dem Foto",
     "accuracy": "auf {meters} m genau",
-    "place_name": "Name des Ortes",
-    "place_name_optional": "Name des Ortes (optional)",
     "unsupported": "Nur Fotos und Videos können hinzugefügt werden."
   },
   "error": {

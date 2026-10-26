@@ -36,13 +36,26 @@
     {t('nav.new_memory')}
   </a>
 
+  {#if library.importing}
+    {@const imp = library.importing}
+    <a class="importing" href={`/take-in/import/${imp.id}`}>
+      <span class="importing-line">
+        <span>{t('nav.importing', { platform: t(`platform.${imp.platform}`) })}</span>
+        {#if Math.round(imp.progress * 100) > 0}<span class="tabular">{Math.round(imp.progress * 100)}%</span>{/if}
+      </span>
+      <span class="importing-bar"><span style:width={`${Math.max(4, Math.round(imp.progress * 100))}%`}></span></span>
+    </a>
+  {/if}
+
   {#if library.sources.length > 0}
     <div class="archive">
       <p class="label">{t('nav.archive')}</p>
       {#each library.sources as source (source.platform)}
         <div class="source">
           <span>{source.platform === 'afterfeed' ? t('nav.own_memories') : t(`platform.${source.platform}`)}</span>
-          <span class="range tabular">{source.first_year === source.last_year ? source.first_year : `${source.first_year}–${source.last_year}`}</span>
+          {#if source.first_year}
+            <span class="range tabular">{source.first_year === source.last_year ? source.first_year : `${source.first_year}–${source.last_year}`}</span>
+          {/if}
         </div>
       {/each}
       <a class="add" href="/take-in/sources">
@@ -59,6 +72,44 @@
 </nav>
 
 <style>
+  .importing {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    color: var(--text-2);
+    font-size: 13px;
+    font-weight: 500;
+    text-decoration: none;
+  }
+
+  .importing:hover {
+    background: var(--surface-2);
+  }
+
+  .importing-line {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .importing-bar {
+    height: 4px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: var(--surface-3);
+  }
+
+  .importing-bar span {
+    display: block;
+    height: 100%;
+    border-radius: 999px;
+    background: var(--ink);
+    transition: width 0.6s ease;
+  }
+
   .sidebar {
     position: sticky;
     top: 0;

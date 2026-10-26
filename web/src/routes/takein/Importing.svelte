@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onDestroy, onMount } from 'svelte'
   import Icon from '../../components/Icon.svelte'
+  import ImportSplash from '../../components/ImportSplash.svelte'
   import { del, get, post } from '../../lib/api'
   import { errorMessage } from '../../lib/errors'
   import { formatNumber, t } from '../../lib/i18n/index.svelte'
@@ -51,6 +52,8 @@
     status: 'queued' | 'running' | 'needs_parts' | 'done' | 'failed' | 'cancelled'
     phase: string
     progress: number
+    done?: number
+    total?: number
     check?: Check
     report?: Report
     error?: string
@@ -59,34 +62,29 @@
   let st = $state<ImportStatus | null>(null)
   let actionError = $state('')
   let busy = $state(false)
+  let offline = $state(false)
+  // The splash shows while loading only when loading takes a moment, so a
+  // finished import goes straight to its report.
+  let slow = $state(false)
+  const slowTimer = setTimeout(() => (slow = true), 400)
   let timer: ReturnType<typeof setTimeout> | undefined
   let stopped = false
 
   const name = $derived(st ? t(`platform.${st.platform}`) : '')
   const active = $derived(st?.status === 'queued' || st?.status === 'running')
-  const steps = ['reading', 'copying', 'indexing'] as const
-  const stepIndex = $derived.by(() => {
-    switch (st?.phase) {
-      case 'copying':
-        return 1
-      case 'indexing':
-        return 2
-      default:
-        return 0
-    }
-  })
-
   async function load() {
     try {
       const res = await get<{ import: ImportStatus }>(`/imports/${id}`)
       const wasActive = st?.status === 'queued' || st?.status === 'running'
       st = res.import
+      offline = false
       if (wasActive && st.status === 'done') loadLibrary()
     } catch (err) {
+      offline = true
       actionError = errorMessage(err)
     }
-    if (!stopped && (!st || st.status === 'queued' || st.status === 'running')) {
-      timer = setTimeout(load, 1000)
+    if (!stopped && (!st || offline || st.status === 'queued' || st.status === 'running')) {
+      timer = setTimeout(load, offline ? 3000 : 1000)
     }
   }
 
@@ -94,6 +92,7 @@
   onDestroy(() => {
     stopped = true
     clearTimeout(timer)
+    clearTimeout(slowTimer)
   })
 
   async function act(fn: () => Promise<unknown>) {
@@ -110,13 +109,6 @@
     }
   }
 
-  function stepLabel(step: string, i: number): string {
-    if (i === 0 && (st?.phase === 'opening' || st?.status === 'queued')) {
-      return st?.status === 'queued' ? t('takein.phase.queued') : t('takein.phase.opening')
-    }
-    return t(`takein.phase.${step}`)
-  }
-
   function errorText(code = ''): string {
     const platform = name
     if (code.startsWith('import.empty')) return t('takein.error_empty', { platform })
@@ -127,40 +119,26 @@
   }
 
   const next = $derived(st ? nextAfter(st.platform) : undefined)
+
+  const phaseText = $derived.by(() => {
+    if (!st || st.status === 'queued') return t('takein.phase.queued')
+    return t(`takein.phase.${st.phase || 'opening'}`)
+  })
+  // The opening and reading phases have no meaningful count.
+  const splashProgress = $derived(!st || st.status === 'queued' || st.phase === 'opening' ? null : st.progress)
+  const splashCounts = $derived(st?.phase === 'copying' ? { done: st.done ?? 0, total: st.total ?? 0 } : { done: 0, total: 0 })
 </script>
 
 {#if !st}
-  <p class="visually-hidden">{t('common.loading')}</p>
+  {#if slow || offline}
+    <ImportSplash title={t('takein.importing_any')} phase={t('common.loading')} progress={null} {offline} />
+  {:else}
+    <p class="visually-hidden">{t('common.loading')}</p>
+  {/if}
 {:else if active}
-  <Step title={t('takein.importing', { platform: name })} body={t('takein.close_page')}>
-    <ol class="phases">
-      {#each steps as step, i (step)}
-        {@const state = i < stepIndex ? 'done' : i === stepIndex ? 'current' : 'next'}
-        <li class={state}>
-          <span class="mark" aria-hidden="true">
-            {#if state === 'done'}<Icon name="check" size={16} />{:else if state === 'current'}<span class="dot"></span>{/if}
-          </span>
-          <div class="phase">
-            <span class="label">{stepLabel(step, i)}</span>
-            {#if state === 'current' && st.status === 'running'}
-              <div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow={Math.round(st.progress * 100)}>
-                <span style:width={`${Math.max(2, Math.round(st.progress * 100))}%`}></span>
-              </div>
-            {/if}
-          </div>
-        </li>
-      {/each}
-    </ol>
-
-    {#if st.check}
-      {@render found(st.check)}
-    {/if}
-
-    {#snippet footer()}
-      <span></span>
-      <button class="btn" type="button" disabled={busy} onclick={() => act(() => del(`/imports/${id}`))}>{t('takein.cancel_import')}</button>
-    {/snippet}
-  </Step>
+  <ImportSplash title={t('takein.importing', { platform: name })} phase={phaseText} progress={splashProgress}
+                done={splashCounts.done} total={splashCounts.total} {offline} {busy}
+                oncancel={() => act(() => del(`/imports/${id}`))} />
 {:else if st.status === 'needs_parts'}
   <Step title={t('takein.missing_title')} body={t('takein.missing_body', { count: st.check?.missing ?? 0 })}>
     {#if st.check?.missing_examples?.length}
@@ -285,92 +263,6 @@
 {/snippet}
 
 <style>
-  .phases {
-    display: flex;
-    flex-direction: column;
-    gap: 18px;
-    margin: 0;
-    padding: 0;
-    list-style: none;
-  }
-
-  .phases li {
-    display: flex;
-    gap: 14px;
-    align-items: flex-start;
-  }
-
-  .mark {
-    width: 24px;
-    height: 24px;
-    flex: 0 0 24px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: 1.5px solid var(--border-strong);
-    border-radius: 50%;
-    color: var(--on-ink);
-  }
-
-  .done .mark {
-    border-color: var(--ink);
-    background: var(--ink);
-  }
-
-  .current .mark {
-    border-color: var(--ink);
-  }
-
-  .dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: var(--ink);
-    animation: pulse 1.4s ease-in-out infinite;
-  }
-
-  @keyframes pulse {
-    50% {
-      opacity: 0.3;
-    }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .dot {
-      animation: none;
-    }
-  }
-
-  .phase {
-    flex: 1 1 auto;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    padding-top: 2px;
-  }
-
-  .label {
-    font-size: 16px;
-  }
-
-  .next .label {
-    color: var(--text-muted);
-  }
-
-  .bar {
-    height: 6px;
-    overflow: hidden;
-    border-radius: 3px;
-    background: var(--surface-3);
-  }
-
-  .bar span {
-    display: block;
-    height: 100%;
-    background: var(--ink);
-    transition: width 0.6s ease;
-  }
-
   h2 {
     font-size: 16px;
     font-weight: 600;

@@ -1,5 +1,6 @@
 <script lang="ts">
   import { t } from '../lib/i18n/index.svelte'
+  import { library } from '../lib/library.svelte'
   import { router } from '../lib/router.svelte'
   import Icon from './Icon.svelte'
 
@@ -28,6 +29,15 @@
   })
 </script>
 
+{#if library.importing}
+  {@const imp = library.importing}
+  <a class="importing" href={`/take-in/import/${imp.id}`}>
+    <span>{t('nav.importing', { platform: t(`platform.${imp.platform}`) })}</span>
+    {#if Math.round(imp.progress * 100) > 0}<span class="tabular">{Math.round(imp.progress * 100)}%</span>{/if}
+    <span class="importing-bar" style:width={`${Math.max(4, Math.round(imp.progress * 100))}%`}></span>
+  </a>
+{/if}
+
 <nav class="tabs" aria-label={t('nav.main')}>
   {#each tabs as tab (tab.href)}
     {@const active = tab.match(router.path)}
@@ -55,6 +65,36 @@
 {/if}
 
 <style>
+  .importing {
+    position: fixed;
+    left: 8px;
+    right: 8px;
+    bottom: calc(74px + env(safe-area-inset-bottom));
+    z-index: 47;
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    overflow: hidden;
+    padding: 10px 14px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: var(--surface);
+    box-shadow: var(--shadow-md);
+    color: var(--text-2);
+    font-size: 13px;
+    font-weight: 500;
+    text-decoration: none;
+  }
+
+  .importing-bar {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    height: 3px;
+    background: var(--ink);
+    transition: width 0.6s ease;
+  }
+
   .tabs {
     position: fixed;
     left: 0;

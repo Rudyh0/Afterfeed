@@ -18,7 +18,8 @@
     "more": "Más",
     "archive": "Archivo",
     "add_source": "Añadir fuente",
-    "own_memories": "Recuerdos propios"
+    "own_memories": "Recuerdos propios",
+    "importing": "Importando {platform}"
   },
   "common": {
     "cancel": "Cancelar",
@@ -160,7 +161,9 @@
     "pick_on_map": "Haz clic en el mapa para fijar la ubicación",
     "invalid_date": "Introduce una fecha válida",
     "invalid_time": "Introduce una hora válida",
-    "server_tz": "Zona horaria del servidor ({tz})"
+    "server_tz": "Zona horaria del servidor ({tz})",
+    "choose_from_list": "Elige un lugar de la lista.",
+    "no_places": "No se encontraron lugares para «{q}»"
   },
   "bulk": {
     "title_one": "Editar {count} recuerdo",
@@ -392,7 +395,7 @@
     "cancel_import": "Detener importación",
     "cancelled_title": "Importación detenida",
     "cancelled_body": "Lo ya importado se conserva. Importar de nuevo los mismos archivos continúa donde se detuvo.",
-    "close_page": "Puedes cerrar esta página; la importación continúa en el servidor.",
+    "close_page": "Puedes cerrar esta pestaña y volver más tarde. La importación continúa en el servidor.",
     "stat_new_memories": "Recuerdos nuevos",
     "stat_photos": "Fotos",
     "stat_videos": "Vídeos",
@@ -404,7 +407,11 @@
     "report_check_years": "Comprueba que estén todos los años que esperas antes de cerrar la cuenta.",
     "done_title": "Configuración completada",
     "done_body": "Añade fuentes en cualquier momento con {action} en el menú.",
-    "upload_more": "Añadir más archivos"
+    "upload_more": "Añadir más archivos",
+    "patience": "Ten paciencia. Puede tardar un rato, según el tamaño de tu exportación.",
+    "importing_any": "Se está importando tu exportación",
+    "count_of": "{done} de {total}",
+    "reconnecting": "Sin conexión con el servidor. Reintentando…"
   },
   "settings": {
     "title": "Ajustes",
@@ -478,7 +485,7 @@
     "save": "Guardar recuerdo",
     "saving": "Guardando",
     "use_current_location": "Usar la ubicación actual",
-    "enter_location": "Escribir un lugar",
+    "enter_location": "Buscar un lugar",
     "locating": "Buscando tu ubicación",
     "location_https_only": "Tu ubicación actual solo está disponible si abres Afterfeed por HTTPS.",
     "location_denied": "El navegador no ha compartido tu ubicación.",
@@ -488,8 +495,6 @@
     "take_photo": "Hacer una foto",
     "date_from_photo": "Fecha y hora de la foto",
     "accuracy": "precisión de {meters} m",
-    "place_name": "Nombre del lugar",
-    "place_name_optional": "Nombre del lugar (opcional)",
     "unsupported": "Solo se pueden añadir fotos y vídeos."
   },
   "error": {

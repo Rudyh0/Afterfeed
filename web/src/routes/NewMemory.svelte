@@ -1,7 +1,10 @@
 <script lang="ts">
   import { onDestroy, onMount } from 'svelte'
   import Icon from '../components/Icon.svelte'
+  import PlacePicker, { type PlaceValue } from '../components/PlacePicker.svelte'
+  import { get } from '../lib/api'
   import { readPhotoInfo } from '../lib/exif'
+  import { randomId } from '../lib/id'
   import { formatNumber, t } from '../lib/i18n/index.svelte'
   import { loadLibrary } from '../lib/library.svelte'
   import { navigate, type Params } from '../lib/router.svelte'
@@ -16,7 +19,7 @@
     video: boolean
   }
 
-  type LocationMode = 'manual' | 'current' | 'photo'
+  type LocationMode = 'search' | 'current' | 'photo'
 
   const now = new Date()
   const pad = (n: number) => String(n).padStart(2, '0')
@@ -27,10 +30,11 @@
   let time = $state(`${pad(now.getHours())}:${pad(now.getMinutes())}`)
   let dateTouched = $state(false)
   let dateFromPhoto = $state(false)
-  let mode = $state<LocationMode>('manual')
-  let placeName = $state('')
-  let coords = $state<{ lat: number; lon: number; accuracy?: number } | null>(null)
-  let photoCoords = $state<{ lat: number; lon: number } | null>(null)
+  let mode = $state<LocationMode>('search')
+  let picked = $state<PlaceValue | null>(null)
+  let coords = $state<{ lat: number; lon: number; accuracy?: number; name?: string } | null>(null)
+  let photoCoords = $state<{ lat: number; lon: number; name?: string } | null>(null)
+  let dragging = $state(false)
   let locating = $state(false)
   let locationError = $state('')
   let saving = $state(false)
@@ -42,13 +46,19 @@
   const canSave = $derived((items.length > 0 || text.trim() !== '') && !saving)
 
   onMount(hideSplash)
-  onDestroy(() => items.forEach((i) => URL.revokeObjectURL(i.url)))
+  onDestroy(() => items.forEach((i) => i.url && URL.revokeObjectURL(i.url)))
 
-  async function add(files: FileList | null) {
+  // The browser can show these; other photos (such as HEIC from an iPhone)
+  // show their name until they are saved.
+  const viewable = /^image\/(jpeg|png|gif|webp|avif|bmp)$/
+
+  async function add(files: FileList | File[] | null) {
     if (!files) return
     for (const file of Array.from(files)) {
-      if (!file.type.startsWith('image/') && !file.type.startsWith('video/') && !/\.(heic|heif|jpe?g|png|mov|mp4)$/i.test(file.name)) continue
-      items.push({ key: crypto.randomUUID(), file, url: URL.createObjectURL(file), video: file.type.startsWith('video/') })
+      if (!file.type.startsWith('image/') && !file.type.startsWith('video/') && !/\.(heic|heif|jpe?g|png|webp|gif|mov|mp4|m4v)$/i.test(file.name)) continue
+      const video = file.type.startsWith('video/') || /\.(mov|mp4|m4v)$/i.test(file.name)
+      const url = video || viewable.test(file.type) ? URL.createObjectURL(file) : ''
+      items.push({ key: randomId(), file, url, video })
       if (items.length === 1 || (!dateFromPhoto && !photoCoords)) {
         const info = await readPhotoInfo(file)
         if (info.date && !dateTouched) {
@@ -57,20 +67,47 @@
           dateFromPhoto = true
         }
         if (info.lat !== undefined && info.lon !== undefined && !photoCoords) {
-          photoCoords = { lat: info.lat, lon: info.lon }
-          if (mode === 'manual' && !placeName) mode = 'photo'
+          const c = { lat: info.lat, lon: info.lon }
+          photoCoords = c
+          if (mode === 'search' && !picked) mode = 'photo'
+          placeName(c.lat, c.lon).then((name) => {
+            if (photoCoords === c || (photoCoords?.lat === c.lat && photoCoords?.lon === c.lon)) photoCoords = { ...c, name }
+          })
         }
       }
     }
   }
 
+  function pickFiles(e: Event) {
+    const input = e.currentTarget as HTMLInputElement
+    add(input.files ? Array.from(input.files) : null)
+    // Let the same file be chosen again after removing it.
+    input.value = ''
+  }
+
+  function onDrop(e: DragEvent) {
+    e.preventDefault()
+    dragging = false
+    add(e.dataTransfer?.files ?? null)
+  }
+
+  // The name of the nearest town, for a location from the device or a photo.
+  async function placeName(lat: number, lon: number): Promise<string> {
+    try {
+      const res = await get<{ place: { name: string } | null }>(`/geo/reverse?lat=${lat}&lon=${lon}`)
+      return res.place?.name ?? ''
+    } catch {
+      return ''
+    }
+  }
+
   function remove(item: Item) {
-    URL.revokeObjectURL(item.url)
+    if (item.url) URL.revokeObjectURL(item.url)
     items = items.filter((i) => i.key !== item.key)
     if (items.length === 0) {
       dateFromPhoto = false
       photoCoords = null
-      if (mode === 'photo') mode = 'manual'
+      if (mode === 'photo') mode = 'search'
     }
   }
 
@@ -83,9 +120,11 @@
     }
     locating = true
     navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        coords = { lat: pos.coords.latitude, lon: pos.coords.longitude, accuracy: pos.coords.accuracy }
+      async (pos) => {
+        const c = { lat: pos.coords.latitude, lon: pos.coords.longitude, accuracy: pos.coords.accuracy }
+        coords = c
         locating = false
+        coords = { ...c, name: await placeName(c.lat, c.lon) }
       },
       () => {
         locationError = t('new_memory.location_denied')
@@ -100,10 +139,9 @@
   }
 
   function place() {
-    const name = placeName.trim()
-    if (mode === 'current' && coords) return { name, lat: coords.lat, lon: coords.lon }
-    if (mode === 'photo' && photoCoords) return { name, lat: photoCoords.lat, lon: photoCoords.lon }
-    if (mode === 'manual' && name) return { name }
+    if (mode === 'current' && coords) return { name: coords.name ?? '', lat: coords.lat, lon: coords.lon }
+    if (mode === 'photo' && photoCoords) return { name: photoCoords.name ?? '', lat: photoCoords.lat, lon: photoCoords.lon }
+    if (mode === 'search' && picked) return picked
     return null
   }
 
@@ -160,7 +198,8 @@
 <form class="page" onsubmit={save}>
   <h1 class="page-title">{t('new_memory.title')}</h1>
 
-  <section class="card block">
+  <section class="card block" class:dragging role="group" aria-label={t('new_memory.add_media')}
+           ondragover={(e) => { e.preventDefault(); dragging = true }} ondragleave={() => (dragging = false)} ondrop={onDrop}>
     {#if items.length > 0}
       <ul class="previews">
         {#each items as item (item.key)}
@@ -169,8 +208,10 @@
               <!-- svelte-ignore a11y_media_has_caption -->
               <video src={item.url} muted playsinline preload="metadata"></video>
               <span class="play" aria-hidden="true"><Icon name="play" size={14} /></span>
-            {:else}
+            {:else if item.url}
               <img src={item.url} alt="" />
+            {:else}
+              <span class="file-tile"><Icon name="image" size={22} /><span>{item.file.name}</span></span>
             {/if}
             <button type="button" class="remove" aria-label={t('new_memory.remove_media', { name: item.file.name })} onclick={() => remove(item)}>
               <Icon name="close" size={16} />
@@ -182,12 +223,12 @@
     <div class="pickers">
       <label class="btn">
         <Icon name="image" size={18} />{t('new_memory.add_media')}
-        <input class="visually-hidden" type="file" accept="image/*,video/*" multiple onchange={(e) => add((e.currentTarget as HTMLInputElement).files)} />
+        <input class="visually-hidden" type="file" accept="image/*,video/*,.heic,.heif" multiple onchange={pickFiles} />
       </label>
       {#if touch}
         <label class="btn">
           <Icon name="plus" size={18} />{t('new_memory.take_photo')}
-          <input class="visually-hidden" type="file" accept="image/*" capture="environment" onchange={(e) => add((e.currentTarget as HTMLInputElement).files)} />
+          <input class="visually-hidden" type="file" accept="image/*" capture="environment" onchange={pickFiles} />
         </label>
       {/if}
     </div>
@@ -213,29 +254,31 @@
   <fieldset class="field location">
     <legend>{t('new_memory.location')}</legend>
     <div class="segmented wrap" role="group">
-      <button type="button" aria-pressed={mode === 'manual'} onclick={() => (mode = 'manual')}>{t('new_memory.enter_location')}</button>
+      <button type="button" aria-pressed={mode === 'search'} onclick={() => (mode = 'search')}><Icon name="search" size={16} />{t('new_memory.enter_location')}</button>
       <button type="button" aria-pressed={mode === 'current'} onclick={useCurrent}><Icon name="pin" size={16} />{t('new_memory.use_current_location')}</button>
       {#if photoCoords}
         <button type="button" aria-pressed={mode === 'photo'} onclick={() => (mode = 'photo')}><Icon name="image" size={16} />{t('new_memory.location_from_photo')}</button>
       {/if}
     </div>
 
-    {#if mode === 'current'}
+    {#if mode === 'search'}
+      <PlacePicker value={picked} onchange={(v) => (picked = v)} id="nm-place" />
+    {:else if mode === 'current'}
       {#if locating}
         <p class="hint">{t('new_memory.locating')}</p>
       {:else if locationError}
         <p class="error-text" role="alert">{locationError}</p>
       {:else if coords}
-        <p class="coords"><Icon name="pin" size={16} /><span class="tabular">{coordText(coords)}</span>
+        <p class="coords"><Icon name="pin" size={16} />
+          {#if coords.name}<span class="place">{coords.name}</span>{/if}
+          <span class="tabular hint">{coordText(coords)}</span>
           {#if coords.accuracy}<span class="hint">· {t('new_memory.accuracy', { meters: formatNumber(Math.round(coords.accuracy)) })}</span>{/if}</p>
       {/if}
     {:else if mode === 'photo' && photoCoords}
-      <p class="coords"><Icon name="pin" size={16} /><span class="tabular">{coordText(photoCoords)}</span></p>
+      <p class="coords"><Icon name="pin" size={16} />
+        {#if photoCoords.name}<span class="place">{photoCoords.name}</span>{/if}
+        <span class="tabular hint">{coordText(photoCoords)}</span></p>
     {/if}
-
-    <label class="visually-hidden" for="nm-place">{t('new_memory.place_name')}</label>
-    <input id="nm-place" class="input" bind:value={placeName}
-           placeholder={mode === 'manual' ? t('new_memory.place_name') : t('new_memory.place_name_optional')} />
   </fieldset>
 
   {#if error}<p class="error-text" role="alert">{error}</p>{/if}
@@ -265,6 +308,32 @@
     flex-direction: column;
     gap: 16px;
     padding: 16px;
+    transition: border-color 0.15s, background 0.15s;
+  }
+
+  .block.dragging {
+    border-color: var(--accent);
+    border-style: dashed;
+    background: var(--accent-soft);
+  }
+
+  .file-tile {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 8px;
+    color: var(--text-3);
+    font-size: 12px;
+    text-align: center;
+    overflow-wrap: anywhere;
+  }
+
+  .place {
+    font-weight: 600;
   }
 
   .previews {
