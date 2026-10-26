@@ -59,9 +59,17 @@ type previewJob struct {
 }
 
 func (m *Manager) preparePreviews(ctx context.Context) error {
+	// What Today shows comes first: the days around today in every year,
+	// then the newest memories.
+	now := time.Now().In(m.lib.Location(""))
+	days := make([]any, 0, 7)
+	for d := -3; d <= 3; d++ {
+		days = append(days, now.AddDate(0, 0, d).Format("01-02"))
+	}
 	rows, err := m.st.R.QueryContext(ctx, `SELECT md.id, md.kind, md.mime, md.file, md.overlay, mm.path
 		FROM media md JOIN memories mm ON mm.id = md.memory_id
-		WHERE md.kind IN ('photo', 'video') ORDER BY mm.taken_at DESC`)
+		WHERE md.kind IN ('photo', 'video')
+		ORDER BY CASE WHEN mm.month_day IN (?, ?, ?, ?, ?, ?, ?) THEN 0 ELSE 1 END, mm.taken_at DESC`, days...)
 	if err != nil {
 		return err
 	}
@@ -90,17 +98,36 @@ func (m *Manager) preparePreviews(ctx context.Context) error {
 	previewsLeft.Store(int64(len(jobs)))
 	defer previewsLeft.Store(0)
 	began := time.Now()
+	var busyMu sync.Mutex
+	busy := map[string]time.Time{}
 	stopLog := make(chan struct{})
 	defer close(stopLog)
 	go func() {
 		t := time.NewTicker(30 * time.Second)
 		defer t.Stop()
+		last, still := int64(-1), 0
 		for {
 			select {
 			case <-stopLog:
 				return
 			case <-t.C:
-				slog.Info("preparing previews", "left", previewsLeft.Load(), "of", len(jobs))
+				left := previewsLeft.Load()
+				slog.Info("preparing previews", "left", left, "of", len(jobs))
+				if left == last {
+					still++
+				} else {
+					still = 0
+				}
+				last = left
+				if still >= 4 {
+					// Two minutes without progress: say which files it is on.
+					busyMu.Lock()
+					for p, since := range busy {
+						slog.Warn("preview has not finished", "file", p, "for", time.Since(since).Round(time.Second))
+					}
+					busyMu.Unlock()
+					still = 0
+				}
 			}
 		}
 	}()
@@ -112,14 +139,20 @@ func (m *Manager) preparePreviews(ctx context.Context) error {
 
 	ch := make(chan previewJob)
 	var wg sync.WaitGroup
-	for range 2 {
+	for range m.media.BackgroundWorkers() {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
 			for j := range ch {
-				if _, err := m.media.Get(ctx, j.src, media.Thumb); err != nil && ctx.Err() == nil {
+				busyMu.Lock()
+				busy[j.src.Path] = time.Now()
+				busyMu.Unlock()
+				if err := m.media.Prepare(ctx, j.src, media.Thumb); err != nil && ctx.Err() == nil {
 					slog.Debug("thumbnail", "id", j.src.ID, "err", err)
 				}
+				busyMu.Lock()
+				delete(busy, j.src.Path)
+				busyMu.Unlock()
 				previewsLeft.Add(-1)
 			}
 		}()

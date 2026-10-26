@@ -3,6 +3,7 @@ package media
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"image"
 	"image/color"
 	"image/jpeg"
@@ -11,6 +12,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"testing"
+	"time"
 )
 
 func TestSniff(t *testing.T) {
@@ -123,5 +125,46 @@ func writeJPEG(t *testing.T, p string, w, h int) {
 	}
 	if err := os.WriteFile(p, buf.Bytes(), 0o644); err != nil {
 		t.Fatal(err)
+	}
+}
+
+// A video's thumbnail needs its poster frame first. With every work slot
+// taken by video thumbnails, they must not wait for each other forever.
+func TestVideoThumbsDoNotDeadlock(t *testing.T) {
+	s := New(t.TempDir())
+	if s.tools.VipsThumb == "" || s.tools.FFmpeg == "" {
+		t.Skip("vips or ffmpeg not installed")
+	}
+	s.sem = make(chan struct{}, 2)
+	dir := t.TempDir()
+	var videos []string
+	for i := range 4 {
+		v := filepath.Join(dir, fmt.Sprintf("v%d.mp4", i))
+		out, err := exec.Command("ffmpeg", "-v", "error", "-f", "lavfi", "-i", "testsrc=duration=2:size=320x240:rate=10",
+			"-pix_fmt", "yuv420p", "-y", v).CombinedOutput()
+		if err != nil {
+			t.Fatalf("ffmpeg: %v %s", err, out)
+		}
+		videos = append(videos, v)
+	}
+	done := make(chan error, len(videos)*2)
+	for i, v := range videos {
+		for _, variant := range []Variant{Thumb, Preview} {
+			go func() {
+				_, err := s.Get(context.Background(), Source{ID: fmt.Sprintf("vv%02d", i), Path: v, Kind: Video}, variant)
+				done <- err
+			}()
+		}
+	}
+	timeout := time.After(60 * time.Second)
+	for range len(videos) * 2 {
+		select {
+		case err := <-done:
+			if err != nil {
+				t.Fatal(err)
+			}
+		case <-timeout:
+			t.Fatal("video thumbnails are stuck waiting for each other")
+		}
 	}
 }

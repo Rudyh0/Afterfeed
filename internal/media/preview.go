@@ -51,6 +51,9 @@ type Service struct {
 	cacheDir string
 	tools    Tools
 	sem      chan struct{}
+	// background limits work that nobody is waiting for, so one slot of
+	// sem stays free for what is on screen.
+	background chan struct{}
 	// docService is the address of a Gotenberg server that converts office
 	// documents to PDF, for previews. Empty when there is none.
 	docService string
@@ -67,11 +70,13 @@ type call struct {
 
 // New creates a media service that keeps variants in cacheDir.
 func New(cacheDir string) *Service {
+	slots := max(2, runtime.NumCPU())
 	return &Service{
-		cacheDir: cacheDir,
-		tools:    FindTools(),
-		sem:      make(chan struct{}, max(1, runtime.NumCPU())),
-		inflight: map[string]*call{},
+		cacheDir:   cacheDir,
+		tools:      FindTools(),
+		sem:        make(chan struct{}, slots),
+		background: make(chan struct{}, slots-1),
+		inflight:   map[string]*call{},
 	}
 }
 
@@ -107,6 +112,22 @@ func (s *Service) Has(id string, v Variant) bool {
 	return err == nil
 }
 
+// BackgroundWorkers is how many variants Prepare makes at the same time.
+func (s *Service) BackgroundWorkers() int { return cap(s.background) }
+
+// Prepare makes a variant ahead of time. It leaves room for requests from
+// the web app, which go first.
+func (s *Service) Prepare(ctx context.Context, src Source, v Variant) error {
+	select {
+	case s.background <- struct{}{}:
+	case <-ctx.Done():
+		return ctx.Err()
+	}
+	defer func() { <-s.background }()
+	_, err := s.Get(ctx, src, v)
+	return err
+}
+
 // Get returns the path of a variant, creating it when it is not cached yet.
 // Concurrent requests for the same variant share one creation.
 func (s *Service) Get(ctx context.Context, src Source, v Variant) (string, error) {
@@ -138,6 +159,19 @@ func (s *Service) Get(ctx context.Context, src Source, v Variant) (string, error
 }
 
 func (s *Service) create(ctx context.Context, src Source, v Variant, dst string) (string, error) {
+	// The thumbnail and preview of a video are made from its poster frame.
+	// Get the poster before taking a work slot: a thumbnail that held a slot
+	// while waiting for its poster could wait forever when every slot is
+	// taken by such thumbnails.
+	var poster string
+	if src.Kind == Video && v != Poster {
+		p, err := s.Get(ctx, Source{ID: src.ID, Path: src.Path, Kind: Video}, Poster)
+		if err != nil {
+			return "", err
+		}
+		poster = p
+	}
+
 	select {
 	case s.sem <- struct{}{}:
 	case <-ctx.Done():
@@ -156,7 +190,7 @@ func (s *Service) create(ctx context.Context, src Source, v Variant, dst string)
 	case v == Poster && src.Kind == Video:
 		err = s.videoFrame(ctx, src.Path, tmp, posterSize)
 	case src.Kind == Video:
-		err = s.videoImage(ctx, src, v, tmp)
+		err = s.imageVariant(ctx, poster, src.Overlay, sizeOf(v), tmp)
 	case src.Kind == Photo && v != Poster:
 		err = s.imageVariant(ctx, src.Path, src.Overlay, sizeOf(v), tmp)
 	case src.Kind == Document && v != Poster:
@@ -178,15 +212,6 @@ func sizeOf(v Variant) int {
 		return previewSize
 	}
 	return thumbSize
-}
-
-// videoImage makes a thumbnail or preview of a video from its poster frame.
-func (s *Service) videoImage(ctx context.Context, src Source, v Variant, dst string) error {
-	poster, err := s.Get(ctx, Source{ID: src.ID, Path: src.Path, Kind: Video}, Poster)
-	if err != nil {
-		return err
-	}
-	return s.imageVariant(ctx, poster, src.Overlay, sizeOf(v), dst)
 }
 
 func (s *Service) videoFrame(ctx context.Context, in, out string, size int) error {
