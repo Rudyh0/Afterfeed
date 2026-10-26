@@ -22,7 +22,7 @@ services:
     restart: unless-stopped
 ```
 
-Afterfeed creates the previews during the import. For an export that was imported before you added the service, previews are created the first time you open the conversation.
+A preview is created the first time the document is shown in a conversation and then kept in the cache. Documents that were shown before you added the service get a preview the next time they are shown.
 
 ## Safety
 

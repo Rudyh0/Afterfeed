@@ -184,6 +184,11 @@ func (s *Server) editMemory(w http.ResponseWriter, r *http.Request) error {
 	if err := s.deps.Library.RefreshMonthStats(ctx); err != nil {
 		return err
 	}
+	if m.Vault && !s.vaultOpen(r) {
+		// Moved into a locked vault: the memory is no longer shown.
+		w.WriteHeader(http.StatusNoContent)
+		return nil
+	}
 	return s.memory(w, r)
 }
 

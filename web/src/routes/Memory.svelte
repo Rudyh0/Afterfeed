@@ -36,6 +36,7 @@
   const editing = $derived(router.query.get('edit') === '1')
   const backLabel = $derived.by(() => {
     if (from === '/') return t('nav.today')
+    if (from === '/vault') return t('vault.title')
     const m = from.match(/^\/day\/(\d{2}-\d{2})$/)
     if (m && isMd(m[1])) return formatMd(m[1])
     return t('common.back')

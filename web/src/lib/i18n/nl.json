@@ -161,7 +161,6 @@
     "no_location": "geen locatie",
     "no_description": "geen beschrijving",
     "restore": "Herstel origineel",
-    "apply_to_all": "Toepassen op alle {count} items",
     "clear_location": "Locatie wissen",
     "search_place": "Zoek een plaats",
     "pick_on_map": "Klik op de kaart om de locatie te kiezen",
@@ -256,7 +255,22 @@
     "attachment": "Bijlage",
     "unsupported": "Dit bericht kan niet worden getoond.",
     "load_earlier": "Eerdere berichten",
-    "load_later": "Latere berichten"
+    "load_later": "Latere berichten",
+    "none": "Er staan geen gesprekken in het archief.",
+    "no_match": "Geen gesprekken gevonden voor “{q}”.",
+    "no_messages": "Dit gesprek heeft geen berichten.",
+    "unsent": "Ingetrokken bericht",
+    "photo": "Foto",
+    "play_video": "Video afspelen",
+    "sticker": "Sticker",
+    "latest": "Nieuwste berichten",
+    "no_results": "Geen berichten gevonden.",
+    "found_one": "{count} bericht",
+    "found_other": "{count} berichten",
+    "back": "Alle gesprekken",
+    "go": "Ga",
+    "open_file": "{name} openen",
+    "file_meta": "{type} · {size}"
   },
   "vault": {
     "title": "Kluis",
@@ -276,7 +290,15 @@
     "reset_title": "Pincode van de kluis resetten",
     "reset_body": "Voer het wachtwoord van je account in. De pincode wordt verwijderd en je stelt een nieuwe in. De inhoud van de kluis blijft staan.",
     "moved_in": "Verplaatst naar de kluis",
-    "moved_out": "Uit de kluis gehaald"
+    "moved_out": "Uit de kluis gehaald",
+    "reset": "Pincode resetten",
+    "pin_digits": "Gebruik zes cijfers",
+    "change_title": "Pincode van de kluis wijzigen",
+    "current_pin": "Huidige pincode",
+    "new_pin": "Nieuwe pincode",
+    "repeat_pin": "Herhaal nieuwe pincode",
+    "pin_changed": "Pincode gewijzigd",
+    "no_pin_yet": "Nog geen pincode ingesteld. De kluis vraagt erom als je hem voor het eerst opent."
   },
   "auth": {
     "sign_in": "Inloggen",

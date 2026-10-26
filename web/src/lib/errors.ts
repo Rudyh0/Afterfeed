@@ -7,6 +7,8 @@ const messages: Record<string, string> = {
   'auth.invalid_code': 'auth.invalid_code',
   'auth.password_too_short': 'auth.password_too_short',
   not_found: 'error.not_found',
+  'vault.wrong_pin': 'vault.wrong_pin',
+  'vault.invalid_pin': 'vault.pin_digits',
 }
 
 export function errorMessage(err: unknown): string {

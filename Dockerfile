@@ -38,6 +38,7 @@ RUN apk add --no-cache \
       ffmpeg \
       vips-tools \
       vips-heif \
+      vips-poppler \
       exiftool
 COPY --from=server /out/afterfeed-server /usr/local/bin/afterfeed-server
 COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh

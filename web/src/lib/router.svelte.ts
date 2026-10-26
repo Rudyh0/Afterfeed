@@ -78,15 +78,19 @@ document.addEventListener('click', (e) => {
   navigate(href)
 })
 
-/** Matches a path against a pattern such as /years/:year/:month. */
+/**
+ * Matches a path against a pattern such as /years/:year/:month. Parameters
+ * ending in ? may be left out at the end: /messages/:platform?/:id?.
+ */
 export function match(pattern: string, path: string): Params | null {
   const p = pattern.split('/').filter(Boolean)
   const s = path.split('/').filter(Boolean)
-  if (p.length !== s.length) return null
+  const required = p.filter((x) => !x.endsWith('?')).length
+  if (s.length < required || s.length > p.length) return null
   const params: Params = {}
-  for (let i = 0; i < p.length; i++) {
+  for (let i = 0; i < s.length; i++) {
     if (p[i].startsWith(':')) {
-      params[p[i].slice(1)] = decodeURIComponent(s[i])
+      params[p[i].slice(1).replace(/\?$/, '')] = decodeURIComponent(s[i])
     } else if (p[i] !== s[i]) {
       return null
     }

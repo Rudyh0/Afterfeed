@@ -405,8 +405,11 @@ func (s *Server) memory(w http.ResponseWriter, r *http.Request) error {
 	if err != nil {
 		return err
 	}
-	if c.Vault && !s.vaultOpen(r) {
-		return errNotFound()
+	if c.Vault {
+		if !s.vaultOpen(r) {
+			return errNotFound()
+		}
+		s.deps.Auth.TouchVault(ctx, sessionFrom(ctx))
 	}
 	var rel string
 	var importID sql.NullInt64

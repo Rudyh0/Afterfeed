@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount, tick } from 'svelte'
+  import Dialog from '../components/Dialog.svelte'
   import Icon from '../components/Icon.svelte'
   import TwoFactor from '../components/TwoFactor.svelte'
   import { ApiError, get, patch, post } from '../lib/api'
@@ -23,6 +24,14 @@
   let mapError = $state('')
   let mapSaved = $state(false)
   let autolock = $state(5)
+  let pinSet = $state<boolean | null>(null)
+  let pinOpen = $state(false)
+  let pinCurrent = $state('')
+  let pinNext = $state('')
+  let pinRepeat = $state('')
+  let pinError = $state('')
+  let pinSaved = $state(false)
+  let pinBusy = $state(false)
 
   let current = $state('')
   let next = $state('')
@@ -37,6 +46,7 @@
       mapMode = settings.map.mode
       styleUrl = settings.map.style_url
       autolock = settings.vault.autolock_minutes
+      pinSet = (await get<{ pin_set: boolean }>('/vault')).pin_set
     } finally {
       hideSplash()
     }
@@ -61,6 +71,31 @@
       setTimeout(() => (mapSaved = false), 2000)
     } catch (err) {
       mapError = err instanceof ApiError && err.code === 'settings.invalid_style_url' ? t('settings.invalid_style_url') : errorMessage(err)
+    }
+  }
+
+  async function changePin(e: SubmitEvent) {
+    e.preventDefault()
+    pinError = ''
+    if (!/^\d{6}$/.test(pinNext)) {
+      pinError = t('vault.pin_digits')
+      return
+    }
+    if (pinNext !== pinRepeat) {
+      pinError = t('vault.mismatch')
+      return
+    }
+    pinBusy = true
+    try {
+      await post('/vault/pin/change', { current: pinCurrent, pin: pinNext })
+      pinOpen = false
+      pinCurrent = pinNext = pinRepeat = ''
+      pinSaved = true
+      setTimeout(() => (pinSaved = false), 2000)
+    } catch (err) {
+      pinError = errorMessage(err)
+    } finally {
+      pinBusy = false
     }
   }
 
@@ -212,7 +247,37 @@
         {/each}
       </select>
     </div>
+    {#if pinSet === true}
+      <div class="actions">
+        <button class="btn" type="button" onclick={() => { pinOpen = true; pinError = '' }}><Icon name="key" size={18} />{t('settings.change_pin')}</button>
+        {#if pinSaved}<span class="ok" role="status">{t('vault.pin_changed')}</span>{/if}
+      </div>
+    {:else if pinSet === false}
+      <p class="sub">{t('vault.no_pin_yet')}</p>
+    {/if}
   </section>
+
+  <Dialog open={pinOpen} title={t('vault.change_title')} onclose={() => (pinOpen = false)} width={420}>
+    <form id="pin-form" class="pin-form" onsubmit={changePin}>
+      <div class="field">
+        <label for="pin-current">{t('vault.current_pin')}</label>
+        <input id="pin-current" class="input" type="password" inputmode="numeric" maxlength="6" autocomplete="off" bind:value={pinCurrent} />
+      </div>
+      <div class="field">
+        <label for="pin-next">{t('vault.new_pin')}</label>
+        <input id="pin-next" class="input" type="password" inputmode="numeric" maxlength="6" autocomplete="off" bind:value={pinNext} />
+      </div>
+      <div class="field">
+        <label for="pin-repeat">{t('vault.repeat_pin')}</label>
+        <input id="pin-repeat" class="input" type="password" inputmode="numeric" maxlength="6" autocomplete="off" bind:value={pinRepeat} />
+      </div>
+      {#if pinError}<p class="error-text" role="alert">{pinError}</p>{/if}
+    </form>
+    {#snippet footer()}
+      <button class="btn" type="button" onclick={() => (pinOpen = false)}>{t('common.cancel')}</button>
+      <button class="btn btn-primary" type="submit" form="pin-form" disabled={pinBusy || pinCurrent.length !== 6 || !pinNext}>{t('common.save')}</button>
+    {/snippet}
+  </Dialog>
 
   <section id="about" class="card section" aria-labelledby="h-about">
     <h2 id="h-about">{t('settings.about')}</h2>
@@ -296,6 +361,12 @@
 
   .select {
     max-width: 280px;
+  }
+
+  .pin-form {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
   }
 
   .segmented.wrap {

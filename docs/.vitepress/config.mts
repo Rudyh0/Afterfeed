@@ -52,6 +52,7 @@ export default defineConfig({
           { text: 'Request your Snapchat export', link: '/guide/exports/snapchat' },
           { text: 'Importing large exports', link: '/guide/large-exports' },
           { text: 'Editing metadata', link: '/guide/metadata' },
+          { text: 'Messages', link: '/guide/messages' },
           { text: 'The vault', link: '/guide/vault' },
         ],
       },

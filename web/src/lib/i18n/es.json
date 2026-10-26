@@ -161,7 +161,6 @@
     "no_location": "sin ubicación",
     "no_description": "sin descripción",
     "restore": "Restaurar original",
-    "apply_to_all": "Aplicar a los {count} elementos",
     "clear_location": "Borrar ubicación",
     "search_place": "Buscar un lugar",
     "pick_on_map": "Haz clic en el mapa para fijar la ubicación",
@@ -256,7 +255,22 @@
     "attachment": "Archivo adjunto",
     "unsupported": "Este mensaje no se puede mostrar.",
     "load_earlier": "Mensajes anteriores",
-    "load_later": "Mensajes posteriores"
+    "load_later": "Mensajes posteriores",
+    "none": "No hay conversaciones en el archivo.",
+    "no_match": "Ninguna conversación coincide con «{q}».",
+    "no_messages": "Esta conversación no tiene mensajes.",
+    "unsent": "Mensaje anulado",
+    "photo": "Foto",
+    "play_video": "Reproducir vídeo",
+    "sticker": "Sticker",
+    "latest": "Mensajes más recientes",
+    "no_results": "No se encontraron mensajes.",
+    "found_one": "{count} mensaje",
+    "found_other": "{count} mensajes",
+    "back": "Todas las conversaciones",
+    "go": "Ir",
+    "open_file": "Abrir {name}",
+    "file_meta": "{type} · {size}"
   },
   "vault": {
     "title": "Caja fuerte",
@@ -276,7 +290,15 @@
     "reset_title": "Restablecer el PIN de la caja fuerte",
     "reset_body": "Introduce la contraseña de tu cuenta. El PIN se elimina y puedes elegir uno nuevo. El contenido de la caja fuerte se conserva.",
     "moved_in": "Movido a la caja fuerte",
-    "moved_out": "Sacado de la caja fuerte"
+    "moved_out": "Sacado de la caja fuerte",
+    "reset": "Restablecer PIN",
+    "pin_digits": "Usa seis dígitos",
+    "change_title": "Cambiar el PIN de la caja fuerte",
+    "current_pin": "PIN actual",
+    "new_pin": "PIN nuevo",
+    "repeat_pin": "Repite el PIN nuevo",
+    "pin_changed": "PIN cambiado",
+    "no_pin_yet": "Aún no hay PIN. La caja fuerte lo pide la primera vez que la abres."
   },
   "auth": {
     "sign_in": "Iniciar sesión",

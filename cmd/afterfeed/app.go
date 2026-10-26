@@ -38,6 +38,7 @@ func newApp(ctx context.Context, cfg *config.Config, st *store.Store) (*app, err
 	lib := library.New(cfg.MemoriesDir(), cfg.MessagesDir(), st)
 	lib.SetGeocoder(geocoder)
 	ms := media.New(cfg.CacheDir)
+	ms.SetDocumentService(cfg.PreviewURL)
 	a := &app{
 		cfg:     cfg,
 		store:   st,

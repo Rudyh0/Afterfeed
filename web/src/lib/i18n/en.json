@@ -161,7 +161,6 @@
     "no_location": "no location",
     "no_description": "no description",
     "restore": "Restore original",
-    "apply_to_all": "Apply to all {count} items",
     "clear_location": "Clear location",
     "search_place": "Search for a place",
     "pick_on_map": "Click the map to set the location",
@@ -256,7 +255,22 @@
     "attachment": "Attachment",
     "unsupported": "This message cannot be shown.",
     "load_earlier": "Earlier messages",
-    "load_later": "Later messages"
+    "load_later": "Later messages",
+    "none": "There are no conversations in the archive.",
+    "no_match": "No conversations match “{q}”.",
+    "no_messages": "This conversation has no messages.",
+    "unsent": "Unsent message",
+    "photo": "Photo",
+    "play_video": "Play video",
+    "sticker": "Sticker",
+    "latest": "Latest messages",
+    "no_results": "No messages found.",
+    "found_one": "{count} message",
+    "found_other": "{count} messages",
+    "back": "All conversations",
+    "go": "Go",
+    "open_file": "Open {name}",
+    "file_meta": "{type} · {size}"
   },
   "vault": {
     "title": "Vault",
@@ -276,7 +290,15 @@
     "reset_title": "Reset vault PIN",
     "reset_body": "Enter your account password. The PIN is removed and you can set a new one. The vault contents stay.",
     "moved_in": "Moved to the vault",
-    "moved_out": "Removed from the vault"
+    "moved_out": "Removed from the vault",
+    "reset": "Reset PIN",
+    "pin_digits": "Use six digits",
+    "change_title": "Change vault PIN",
+    "current_pin": "Current PIN",
+    "new_pin": "New PIN",
+    "repeat_pin": "Repeat new PIN",
+    "pin_changed": "PIN changed",
+    "no_pin_yet": "No PIN set yet. The vault asks for one the first time you open it."
   },
   "auth": {
     "sign_in": "Sign in",

@@ -161,7 +161,6 @@
     "no_location": "aucun lieu",
     "no_description": "aucune description",
     "restore": "Rétablir l’original",
-    "apply_to_all": "Appliquer aux {count} éléments",
     "clear_location": "Effacer le lieu",
     "search_place": "Rechercher un lieu",
     "pick_on_map": "Cliquez sur la carte pour choisir le lieu",
@@ -256,7 +255,22 @@
     "attachment": "Pièce jointe",
     "unsupported": "Ce message ne peut pas être affiché.",
     "load_earlier": "Messages précédents",
-    "load_later": "Messages suivants"
+    "load_later": "Messages suivants",
+    "none": "Il n’y a aucune conversation dans l’archive.",
+    "no_match": "Aucune conversation ne correspond à « {q} ».",
+    "no_messages": "Cette conversation ne contient aucun message.",
+    "unsent": "Message retiré",
+    "photo": "Photo",
+    "play_video": "Lire la vidéo",
+    "sticker": "Autocollant",
+    "latest": "Messages les plus récents",
+    "no_results": "Aucun message trouvé.",
+    "found_one": "{count} message",
+    "found_other": "{count} messages",
+    "back": "Toutes les conversations",
+    "go": "Aller",
+    "open_file": "Ouvrir {name}",
+    "file_meta": "{type} · {size}"
   },
   "vault": {
     "title": "Coffre",
@@ -276,7 +290,15 @@
     "reset_title": "Réinitialiser le code du coffre",
     "reset_body": "Saisissez le mot de passe de votre compte. Le code est supprimé et vous pouvez en choisir un nouveau. Le contenu du coffre est conservé.",
     "moved_in": "Placé dans le coffre",
-    "moved_out": "Retiré du coffre"
+    "moved_out": "Retiré du coffre",
+    "reset": "Réinitialiser le code",
+    "pin_digits": "Utilisez six chiffres",
+    "change_title": "Modifier le code du coffre",
+    "current_pin": "Code actuel",
+    "new_pin": "Nouveau code",
+    "repeat_pin": "Répétez le nouveau code",
+    "pin_changed": "Code modifié",
+    "no_pin_yet": "Aucun code défini. Le coffre en demande un à la première ouverture."
   },
   "auth": {
     "sign_in": "Se connecter",

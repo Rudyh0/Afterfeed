@@ -51,6 +51,9 @@ type Service struct {
 	cacheDir string
 	tools    Tools
 	sem      chan struct{}
+	// docService is the address of a Gotenberg server that converts office
+	// documents to PDF, for previews. Empty when there is none.
+	docService string
 
 	mu       sync.Mutex
 	inflight map[string]*call
@@ -74,6 +77,9 @@ func New(cacheDir string) *Service {
 
 // Tools returns the external programs that were found.
 func (s *Service) Tools() Tools { return s.tools }
+
+// SetDocumentService sets the address of the document conversion service.
+func (s *Service) SetDocumentService(url string) { s.docService = strings.TrimRight(url, "/") }
 
 // CachePath returns where a variant of a media file is stored.
 func (s *Service) CachePath(id string, v Variant) string {
@@ -153,6 +159,8 @@ func (s *Service) create(ctx context.Context, src Source, v Variant, dst string)
 		err = s.videoImage(ctx, src, v, tmp)
 	case src.Kind == Photo && v != Poster:
 		err = s.imageVariant(ctx, src.Path, src.Overlay, sizeOf(v), tmp)
+	case src.Kind == Document && v != Poster:
+		err = s.documentImage(ctx, src, sizeOf(v), tmp)
 	default:
 		err = ErrUnsupported
 	}
@@ -206,15 +214,18 @@ func (s *Service) imageVariant(ctx context.Context, in, overlay string, size int
 		return ErrUnsupported
 	}
 	target := out + "[Q=80,strip]"
+	if !strings.Contains(in, "[") {
+		in += "[0]"
+	}
 	if overlay == "" {
-		_, err := s.run(ctx, 2*time.Minute, s.tools.VipsThumb, in+"[0]", "--size", fmt.Sprintf("%dx%d>", size, size), "-o", target)
+		_, err := s.run(ctx, 2*time.Minute, s.tools.VipsThumb, in, "--size", fmt.Sprintf("%dx%d>", size, size), "-o", target)
 		return err
 	}
 	base := out + ".base.png"
 	ov := out + ".overlay.png"
 	defer os.Remove(base)
 	defer os.Remove(ov)
-	if _, err := s.run(ctx, 2*time.Minute, s.tools.VipsThumb, in+"[0]", "--size", fmt.Sprintf("%dx%d>", size, size), "-o", base); err != nil {
+	if _, err := s.run(ctx, 2*time.Minute, s.tools.VipsThumb, in, "--size", fmt.Sprintf("%dx%d>", size, size), "-o", base); err != nil {
 		return err
 	}
 	hdr, err := s.run(ctx, 20*time.Second, s.tools.VipsHeader, "-a", base)

@@ -10,7 +10,7 @@ Open a memory, click the **⋯** menu and choose **Edit metadata**. You can chan
 - **Location**, by searching for a place or clicking the map
 - **Description**
 
-A changed field shows its original value underneath, with **Restore original** to undo the change. For a memory with several photos, **Apply to all** changes every photo at once.
+A changed field shows its original value underneath, with **Restore original** to undo the change. For a memory with several photos or videos, the change applies to all of them.
 
 ## A selection
 

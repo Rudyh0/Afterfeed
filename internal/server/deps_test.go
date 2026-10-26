@@ -5,11 +5,17 @@ import (
 
 	"github.com/rudyh0/afterfeed/internal/auth"
 	"github.com/rudyh0/afterfeed/internal/config"
+	"github.com/rudyh0/afterfeed/internal/library"
+	"github.com/rudyh0/afterfeed/internal/media"
 	"github.com/rudyh0/afterfeed/internal/store"
 )
 
 // testDeps builds the services for API tests.
 func testDeps(t *testing.T, cfg *config.Config, st *store.Store) Deps {
 	t.Helper()
-	return Deps{Auth: auth.New(st)}
+	return Deps{
+		Auth:    auth.New(st),
+		Library: library.New(cfg.MemoriesDir(), cfg.MessagesDir(), st),
+		Media:   media.New(cfg.CacheDir),
+	}
 }

@@ -161,7 +161,6 @@
     "no_location": "kein Ort",
     "no_description": "keine Beschreibung",
     "restore": "Original wiederherstellen",
-    "apply_to_all": "Auf alle {count} Elemente anwenden",
     "clear_location": "Ort entfernen",
     "search_place": "Ort suchen",
     "pick_on_map": "Klicke auf die Karte, um den Ort festzulegen",
@@ -256,7 +255,22 @@
     "attachment": "Anhang",
     "unsupported": "Diese Nachricht kann nicht angezeigt werden.",
     "load_earlier": "Frühere Nachrichten",
-    "load_later": "Spätere Nachrichten"
+    "load_later": "Spätere Nachrichten",
+    "none": "Im Archiv sind keine Unterhaltungen.",
+    "no_match": "Keine Unterhaltungen zu „{q}“.",
+    "no_messages": "Diese Unterhaltung enthält keine Nachrichten.",
+    "unsent": "Zurückgezogene Nachricht",
+    "photo": "Foto",
+    "play_video": "Video abspielen",
+    "sticker": "Sticker",
+    "latest": "Neueste Nachrichten",
+    "no_results": "Keine Nachrichten gefunden.",
+    "found_one": "{count} Nachricht",
+    "found_other": "{count} Nachrichten",
+    "back": "Alle Unterhaltungen",
+    "go": "Los",
+    "open_file": "{name} öffnen",
+    "file_meta": "{type} · {size}"
   },
   "vault": {
     "title": "Tresor",
@@ -276,7 +290,15 @@
     "reset_title": "Tresor-PIN zurücksetzen",
     "reset_body": "Gib das Passwort deines Kontos ein. Die PIN wird entfernt und du kannst eine neue festlegen. Der Inhalt des Tresors bleibt erhalten.",
     "moved_in": "In den Tresor verschoben",
-    "moved_out": "Aus dem Tresor genommen"
+    "moved_out": "Aus dem Tresor genommen",
+    "reset": "PIN zurücksetzen",
+    "pin_digits": "Verwende sechs Ziffern",
+    "change_title": "Tresor-PIN ändern",
+    "current_pin": "Aktuelle PIN",
+    "new_pin": "Neue PIN",
+    "repeat_pin": "Neue PIN wiederholen",
+    "pin_changed": "PIN geändert",
+    "no_pin_yet": "Noch keine PIN festgelegt. Der Tresor fragt beim ersten Öffnen danach."
   },
   "auth": {
     "sign_in": "Anmelden",
