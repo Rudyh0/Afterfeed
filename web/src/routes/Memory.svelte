@@ -1,8 +1,9 @@
 <script lang="ts">
   import { onMount } from 'svelte'
   import Icon from '../components/Icon.svelte'
+  import Editor, { type EditableMemory } from '../components/Editor.svelte'
   import Menu, { type MenuItem } from '../components/Menu.svelte'
-  import { del, get, mediaUrl } from '../lib/api'
+  import { del, get, mediaUrl, patch } from '../lib/api'
   import { errorMessage } from '../lib/errors'
   import { formatBytes, formatFullDate, formatShortDate, t } from '../lib/i18n/index.svelte'
   import { loadLibrary } from '../lib/library.svelte'
@@ -21,6 +22,8 @@
   interface Detail extends Omit<Card, 'media'> {
     media: DetailMedia[]
     source: { platform: string; imported_at?: string; path?: string }
+    server_tz: string
+    original?: EditableMemory['original']
   }
 
   let memory = $state<Detail | null>(null)
@@ -30,6 +33,7 @@
   const index = $derived(Math.min(Math.max(0, Number(router.query.get('i') ?? 0) || 0), Math.max(0, (memory?.media.length ?? 1) - 1)))
   const current = $derived(memory?.media[index])
   const from = $derived(router.query.get('from') ?? '')
+  const editing = $derived(router.query.get('edit') === '1')
   const backLabel = $derived.by(() => {
     if (from === '/') return t('nav.today')
     const m = from.match(/^\/day\/(\d{2}-\d{2})$/)
@@ -89,15 +93,30 @@
     }
   }
 
+  async function setVault(v: boolean) {
+    if (!memory) return
+    try {
+      await patch(`/memories/${memory.id}`, { vault: v })
+      loadLibrary()
+      if (v) navigate(from || '/', { replace: true })
+      else memory = { ...memory, vault: false }
+    } catch (err) {
+      error = errorMessage(err)
+    }
+  }
+
   const menu = $derived.by(() => {
     if (!memory) return []
-    const items: MenuItem[] = []
+    const items: MenuItem[] = [{ label: t('menu.edit_metadata'), icon: 'pencil', onclick: () => setQuery({ edit: '1' }) }]
     if (memory.place?.lat !== undefined && memory.place?.lon !== undefined) {
       items.push({ label: t('menu.show_on_map'), icon: 'map', href: `/map?memory=${memory.id}` })
     }
     if (memory.media.length > 1) {
       items.push({ label: t('menu.download_all', { count: memory.media.length }), icon: 'download', href: `/api/memories/${memory.id}/download`, download: true })
     }
+    items.push(memory.vault
+      ? { label: t('menu.remove_from_vault'), icon: 'unlock', onclick: () => setVault(false) }
+      : { label: t('menu.move_to_vault'), icon: 'lock', onclick: () => setVault(true) })
     if (memory.platform === 'afterfeed') {
       items.push({ label: t('memory.delete'), icon: 'trash', onclick: remove, danger: true })
     }
@@ -120,7 +139,7 @@
     <button class="btn" type="button" onclick={close}>{t('common.back')}</button>
   </div>
 {:else if memory}
-  <div class="detail">
+  <div class="detail" class:no-media={memory.media.length === 0}>
     <section class="stage" aria-label={t('memory.about')} class:empty={memory.media.length === 0}>
       <div class="topbar">
         <button class="back" type="button" onclick={close}><Icon name="chevron-left" size={18} />{backLabel}</button>
@@ -172,6 +191,13 @@
     </section>
 
     <aside class="about" aria-label={t('memory.about')}>
+      {#if editing}
+        <Editor
+          memory={memory}
+          onsaved={(m) => (memory = { ...memory!, ...(m as unknown as Detail) })}
+          oncancel={() => setQuery({ edit: undefined })}
+        />
+      {:else}
       <div class="about-top">
         <span class="pill" class:pill-accent={memory.platform === 'afterfeed'}>{sourceLabel(memory.platform)}</span>
         <div class="about-actions">
@@ -227,6 +253,7 @@
           {/if}
         </div>
       {/if}
+      {/if}
     </aside>
   </div>
 {/if}
@@ -252,7 +279,35 @@
 
   .stage.empty {
     height: auto;
-    min-height: 120px;
+  }
+
+  .detail.no-media {
+    flex-direction: column;
+    align-items: center;
+    background: var(--bg);
+  }
+
+  .no-media .stage {
+    flex: 0 0 auto;
+    width: 100%;
+    max-width: 720px;
+    padding-bottom: 0;
+  }
+
+  .no-media .back {
+    background: var(--surface);
+    color: var(--text);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .no-media .about {
+    flex: 0 0 auto;
+    width: calc(100% - 48px);
+    max-width: 672px;
+    min-height: 0;
+    margin: 16px 24px 48px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-xl);
   }
 
   .topbar {

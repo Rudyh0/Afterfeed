@@ -16,6 +16,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/rudyh0/afterfeed/internal/library"
@@ -268,4 +269,103 @@ func (s *Server) downloadMemory(w http.ResponseWriter, r *http.Request) error {
 	}
 	zw.Close()
 	return nil
+}
+
+// Downloads of several memories go through a short-lived link, so the
+// browser can save the zip file directly instead of holding it in memory.
+type downloadToken struct {
+	ids     []string
+	expires time.Time
+}
+
+var (
+	downloadMu     sync.Mutex
+	downloadTokens = map[string]downloadToken{}
+)
+
+func (s *Server) createDownload(w http.ResponseWriter, r *http.Request) error {
+	var req struct {
+		IDs []string `json:"ids"`
+	}
+	if err := readJSON(r, &req); err != nil {
+		return err
+	}
+	if len(req.IDs) == 0 || len(req.IDs) > 5000 {
+		return errBadRequest("download.invalid", "select 1 to 5000 memories")
+	}
+	b := make([]byte, 16)
+	rand.Read(b)
+	token := hex.EncodeToString(b)
+	downloadMu.Lock()
+	now := time.Now()
+	for k, v := range downloadTokens {
+		if now.After(v.expires) {
+			delete(downloadTokens, k)
+		}
+	}
+	downloadTokens[token] = downloadToken{ids: req.IDs, expires: now.Add(10 * time.Minute)}
+	downloadMu.Unlock()
+	writeJSON(w, http.StatusOK, map[string]string{"url": "/api/downloads/" + token})
+	return nil
+}
+
+func (s *Server) serveDownload(w http.ResponseWriter, r *http.Request) error {
+	downloadMu.Lock()
+	tok, ok := downloadTokens[r.PathValue("token")]
+	downloadMu.Unlock()
+	if !ok || time.Now().After(tok.expires) {
+		return errNotFound()
+	}
+	ctx := r.Context()
+	w.Header().Set("Content-Type", "application/zip")
+	w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="afterfeed-%s.zip"`, time.Now().Format("20060102-150405")))
+	w.Header().Set("Cache-Control", "no-store")
+	zw := zip.NewWriter(w)
+	defer zw.Close()
+	open := s.vaultOpen(r)
+	used := map[string]int{}
+	for _, id := range tok.ids {
+		var rel string
+		if err := s.store.R.QueryRowContext(ctx, `SELECT path FROM memories WHERE id = ?`, id).Scan(&rel); err != nil {
+			continue
+		}
+		mem, err := s.deps.Library.LoadMemory(rel)
+		if err != nil || (mem.Vault && !open) {
+			continue
+		}
+		for i, md := range mem.Media {
+			tmp, name, err := s.downloadFile(ctx, mem, rel, md, i)
+			if err != nil {
+				continue
+			}
+			used[name]++
+			if n := used[name]; n > 1 {
+				ext := filepath.Ext(name)
+				name = fmt.Sprintf("%s-%d%s", strings.TrimSuffix(name, ext), n, ext)
+			}
+			err = addToZip(zw, tmp, name, mem.TakenAt)
+			os.Remove(tmp)
+			if err != nil {
+				slog.Warn("download zip", "err", err)
+				return nil
+			}
+		}
+	}
+	return nil
+}
+
+func addToZip(zw *zip.Writer, path, name string, modified time.Time) error {
+	f, err := os.Open(path)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	hdr := &zip.FileHeader{Name: name, Method: zip.Store, Modified: modified}
+	hdr.SetMode(0o644)
+	zf, err := zw.CreateHeader(hdr)
+	if err != nil {
+		return err
+	}
+	_, err = io.Copy(zf, f)
+	return err
 }

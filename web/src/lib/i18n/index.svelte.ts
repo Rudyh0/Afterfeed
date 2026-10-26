@@ -227,10 +227,17 @@ export function formatDuration(seconds: number): string {
 }
 
 /** Localised country name for an ISO 3166 code. */
+const regionNames = new Map<string, Intl.DisplayNames>()
+
 export function countryName(code: string, l: Locale = state.locale): string {
   if (!code) return ''
   try {
-    return new Intl.DisplayNames([l], { type: 'region' }).of(code.toUpperCase()) ?? code
+    let names = regionNames.get(l)
+    if (!names) {
+      names = new Intl.DisplayNames([l], { type: 'region' })
+      regionNames.set(l, names)
+    }
+    return names.of(code.toUpperCase()) ?? code
   } catch {
     return code
   }

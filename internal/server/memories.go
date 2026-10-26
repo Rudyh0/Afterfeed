@@ -11,7 +11,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/rudyh0/afterfeed/internal/library"
 	"github.com/rudyh0/afterfeed/internal/store"
 )
 
@@ -26,6 +25,8 @@ func (s *Server) memoryRoutes() {
 	m.HandleFunc("POST /api/memories", s.authed(s.createMemory, false))
 	m.HandleFunc("DELETE /api/memories/{id}", s.authed(s.deleteMemory, false))
 	m.HandleFunc("GET /api/memories/{id}/download", s.authed(s.downloadMemory, false))
+	m.HandleFunc("POST /api/downloads", s.authed(s.createDownload, false))
+	m.HandleFunc("GET /api/downloads/{token}", s.authed(s.serveDownload, false))
 }
 
 // cardMedia is a photo or video as shown in lists.
@@ -358,9 +359,20 @@ func (s *Server) month(w http.ResponseWriter, r *http.Request) error {
 // memoryDetail is a memory with everything the detail view shows.
 type memoryDetail struct {
 	*card
-	Media    []detailMedia   `json:"media"`
-	Source   sourceJSON      `json:"source"`
-	Original *library.Fields `json:"original,omitempty"`
+	Media    []detailMedia `json:"media"`
+	Source   sourceJSON    `json:"source"`
+	Original *originalJSON `json:"original,omitempty"`
+	// ServerTZ is the time zone used for memories without one.
+	ServerTZ string `json:"server_tz"`
+}
+
+// originalJSON is how a memory was before it was edited.
+type originalJSON struct {
+	Date  string     `json:"date"`
+	Time  string     `json:"time"`
+	TZ    string     `json:"tz,omitempty"`
+	Text  string     `json:"text"`
+	Place *placeJSON `json:"place,omitempty"`
 }
 
 type detailMedia struct {
@@ -403,7 +415,14 @@ func (s *Server) memory(w http.ResponseWriter, r *http.Request) error {
 	if err != nil {
 		return err
 	}
-	d := memoryDetail{card: c, Media: []detailMedia{}, Original: mem.Original}
+	d := memoryDetail{card: c, Media: []detailMedia{}, ServerTZ: s.deps.Library.Location("").String()}
+	if o := mem.Original; o != nil {
+		local := o.TakenAt.In(s.deps.Library.Location(o.TZ))
+		d.Original = &originalJSON{Date: local.Format("2006-01-02"), Time: local.Format("15:04"), TZ: o.TZ, Text: o.Text}
+		if p := o.Place; p != nil {
+			d.Original.Place = &placeJSON{Name: p.Name, City: p.City, Region: p.Region, CountryCode: p.CountryCode, Lat: p.Lat, Lon: p.Lon}
+		}
+	}
 	for _, md := range mem.Media {
 		d.Media = append(d.Media, detailMedia{
 			cardMedia: cardMedia{ID: md.ID, Kind: md.Kind, Mime: md.Mime, Width: md.Width, Height: md.Height,

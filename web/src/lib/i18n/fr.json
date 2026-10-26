@@ -166,7 +166,8 @@
     "search_place": "Rechercher un lieu",
     "pick_on_map": "Cliquez sur la carte pour choisir le lieu",
     "invalid_date": "Saisissez une date valide",
-    "invalid_time": "Saisissez une heure valide"
+    "invalid_time": "Saisissez une heure valide",
+    "server_tz": "Fuseau horaire du serveur ({tz})"
   },
   "bulk": {
     "title_one": "Modifier {count} souvenir",

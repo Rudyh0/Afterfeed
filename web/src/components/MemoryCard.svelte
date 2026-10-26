@@ -11,8 +11,19 @@
     from?: string
     /** Show the date instead of only the time, for lists across days. */
     showDate?: string
+    /** In selection mode a click selects the memory instead of opening it. */
+    selectable?: boolean
+    selected?: boolean
+    ontoggle?: () => void
   }
-  let { card, from, showDate }: Props = $props()
+  let { card, from, showDate, selectable = false, selected = false, ontoggle }: Props = $props()
+
+  function tileClick(e: MouseEvent) {
+    if (selectable) {
+      e.preventDefault()
+      ontoggle?.()
+    }
+  }
 
   const shown = $derived(card.media.slice(0, 4))
   const extra = $derived(card.media_count - shown.length)
@@ -57,11 +68,17 @@
   })
 </script>
 
-<article class="card memory">
+<article class="card memory" class:selected>
+  {#if selectable}
+    <button class="select" type="button" role="checkbox" aria-checked={selected}
+            aria-label={t('month.select_item', { label: card.text?.slice(0, 40) || card.date })} onclick={() => ontoggle?.()}>
+      {#if selected}<Icon name="check" size={16} />{/if}
+    </button>
+  {/if}
   {#if shown.length > 0}
     <div class="media {layout}" style:--ratio={ratio}>
       {#each shown as m, i (m.id)}
-        <a class="tile" href={detailHref(i)} aria-label={m.kind === 'video' ? t('memory.play_video', { duration: duration(m.duration) }) : t('memory.photo_n', { n: i + 1, total: card.media_count })}>
+        <a class="tile" href={detailHref(i)} onclick={tileClick} aria-label={m.kind === 'video' ? t('memory.play_video', { duration: duration(m.duration) }) : t('memory.photo_n', { n: i + 1, total: card.media_count })}>
           <img
             src={mediaUrl(m.id, 'thumb')}
             srcset={layout === 'one' ? `${mediaUrl(m.id, 'thumb')} 640w, ${mediaUrl(m.id, 'preview')} 2048w` : undefined}
@@ -126,7 +143,40 @@
 
 <style>
   .memory {
+    position: relative;
     overflow: visible;
+  }
+
+  .memory.selected {
+    outline: 3px solid var(--accent);
+    outline-offset: -1px;
+  }
+
+  .select {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    z-index: 3;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid #fff;
+    border-radius: 50%;
+    background: rgba(17, 18, 20, 0.35);
+    color: #fff;
+    box-shadow: 0 1px 4px rgba(17, 18, 20, 0.3);
+    cursor: pointer;
+  }
+
+  .selected .select {
+    border-color: var(--accent);
+    background: var(--accent);
+  }
+
+  .select + .body.no-media {
+    padding-left: 60px;
   }
 
   .media {

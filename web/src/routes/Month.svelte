@@ -1,9 +1,12 @@
 <script lang="ts">
+  import BulkEdit from '../components/BulkEdit.svelte'
   import Icon from '../components/Icon.svelte'
   import MemoryCard from '../components/MemoryCard.svelte'
-  import { get } from '../lib/api'
+  import SelectionBar from '../components/SelectionBar.svelte'
+  import { get, post } from '../lib/api'
   import { errorMessage } from '../lib/errors'
   import { formatFullDate, monthName, t } from '../lib/i18n/index.svelte'
+  import { loadLibrary } from '../lib/library.svelte'
   import { dateOnly, type Card } from '../lib/memories'
   import { navigate, type Params } from '../lib/router.svelte'
   import { hideSplash } from '../lib/splash'
@@ -14,9 +17,51 @@
   const month = $derived(Number(params.month))
   let cards = $state<Card[] | null>(null)
   let error = $state('')
+  let selecting = $state(false)
+  let selected = $state<Set<string>>(new Set())
+  let bulkOpen = $state(false)
+  let reload = $state(0)
+
+  const selectedCards = $derived((cards ?? []).filter((c) => selected.has(c.id)))
+
+  function toggle(id: string) {
+    const next = new Set(selected)
+    if (next.has(id)) next.delete(id)
+    else next.add(id)
+    selected = next
+  }
+
+  function clearSelection() {
+    selecting = false
+    selected = new Set()
+  }
+
+  async function download() {
+    try {
+      const res = await post<{ url: string }>('/downloads', { ids: [...selected] })
+      const a = document.createElement('a')
+      a.href = res.url
+      a.download = ''
+      a.click()
+    } catch (err) {
+      error = errorMessage(err)
+    }
+  }
+
+  async function toVault() {
+    try {
+      await post('/memories/bulk', { ids: [...selected], vault: true })
+      clearSelection()
+      loadLibrary()
+      reload++
+    } catch (err) {
+      error = errorMessage(err)
+    }
+  }
 
   $effect(() => {
     const path = `/years/${year}/${month}`
+    void reload
     let cancelled = false
     get<{ memories: Card[] }>(path)
       .then((res) => {
@@ -71,8 +116,17 @@
         <button type="button" aria-label={label(1)} onclick={() => navigate(shift(1))}><Icon name="chevron-right" size={20} /></button>
       </div>
     </div>
-    {#if cards}<p class="summary">{t('count.memories', { count: cards.length })}</p>{/if}
+    <div class="sub-row">
+      {#if cards}<p class="summary">{t('count.memories', { count: cards.length })}</p>{/if}
+      {#if cards && cards.length > 0 && !selecting}
+        <button class="btn btn-pill" type="button" onclick={() => (selecting = true)}>{t('common.select')}</button>
+      {/if}
+    </div>
   </header>
+
+  {#if selecting}
+    <SelectionBar count={selected.size} onedit={() => (bulkOpen = true)} ondownload={download} onvault={toVault} onclear={clearSelection} />
+  {/if}
 
   {#if error}
     <p class="error-text" role="alert">{error}</p>
@@ -84,7 +138,7 @@
         <section class="day" aria-label={formatFullDate(dateOnly(d.date), 'UTC')}>
           <h2>{formatFullDate(dateOnly(d.date), 'UTC')}</h2>
           {#each d.cards as c (c.id)}
-            <MemoryCard card={c} from={`/years/${year}/${month}`} />
+            <MemoryCard card={c} from={`/years/${year}/${month}`} selectable={selecting} selected={selected.has(c.id)} ontoggle={() => toggle(c.id)} />
           {/each}
         </section>
       {/each}
@@ -92,7 +146,23 @@
   {/if}
 </div>
 
+{#if bulkOpen}
+  <BulkEdit open={bulkOpen} cards={selectedCards} onclose={() => (bulkOpen = false)}
+            ondone={() => {
+              bulkOpen = false
+              clearSelection()
+              reload++
+            }} />
+{/if}
+
 <style>
+  .sub-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
   .page {
     max-width: 680px;
     margin: 0 auto;

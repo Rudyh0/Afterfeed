@@ -166,7 +166,8 @@
     "search_place": "Ort suchen",
     "pick_on_map": "Klicke auf die Karte, um den Ort festzulegen",
     "invalid_date": "Gib ein gültiges Datum ein",
-    "invalid_time": "Gib eine gültige Uhrzeit ein"
+    "invalid_time": "Gib eine gültige Uhrzeit ein",
+    "server_tz": "Zeitzone des Servers ({tz})"
   },
   "bulk": {
     "title_one": "{count} Erinnerung bearbeiten",

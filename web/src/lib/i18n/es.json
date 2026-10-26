@@ -166,7 +166,8 @@
     "search_place": "Buscar un lugar",
     "pick_on_map": "Haz clic en el mapa para fijar la ubicación",
     "invalid_date": "Introduce una fecha válida",
-    "invalid_time": "Introduce una hora válida"
+    "invalid_time": "Introduce una hora válida",
+    "server_tz": "Zona horaria del servidor ({tz})"
   },
   "bulk": {
     "title_one": "Editar {count} recuerdo",

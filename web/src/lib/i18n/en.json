@@ -166,7 +166,8 @@
     "search_place": "Search for a place",
     "pick_on_map": "Click the map to set the location",
     "invalid_date": "Enter a valid date",
-    "invalid_time": "Enter a valid time"
+    "invalid_time": "Enter a valid time",
+    "server_tz": "Time zone of the server ({tz})"
   },
   "bulk": {
     "title_one": "Edit {count} memory",

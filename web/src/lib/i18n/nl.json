@@ -166,7 +166,8 @@
     "search_place": "Zoek een plaats",
     "pick_on_map": "Klik op de kaart om de locatie te kiezen",
     "invalid_date": "Vul een geldige datum in",
-    "invalid_time": "Vul een geldige tijd in"
+    "invalid_time": "Vul een geldige tijd in",
+    "server_tz": "Tijdzone van de server ({tz})"
   },
   "bulk": {
     "title_one": "{count} herinnering bewerken",
