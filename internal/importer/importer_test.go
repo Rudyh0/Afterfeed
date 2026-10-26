@@ -4,9 +4,11 @@ import (
 	"archive/zip"
 	"context"
 	"encoding/json"
+	"errors"
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -415,5 +417,55 @@ func TestResumeInterruptedImport(t *testing.T) {
 	}
 	if after := files(); after != before {
 		t.Errorf("files on disk = %d, want %d", after, before)
+	}
+}
+
+// A part that is not a readable zip file is marked as soon as its upload
+// completes, and the import names it.
+func TestBrokenUpload(t *testing.T) {
+	e := newEnv(t)
+	ctx := context.Background()
+	part1, _, _ := facebookExport(t, t.TempDir())
+	good, _ := os.ReadFile(part1)
+	broken := append([]byte(nil), good[:len(good)-40]...) // the end of the zip file is missing
+
+	b, err := e.m.CreateUpload(ctx, "export-2.zip", int64(len(broken)), 1, "facebook")
+	if err != nil {
+		t.Fatal(err)
+	}
+	done, err := e.m.WriteUpload(ctx, b.ID, 0, bytesReader(broken))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if done.Status != importer.UploadInvalid {
+		t.Fatalf("broken upload status = %s", done.Status)
+	}
+	if _, err := e.m.Create(ctx, "facebook", []importer.FileRef{{Kind: "upload", ID: b.ID}}); !errors.Is(err, importer.ErrNotZip) ||
+		!strings.Contains(err.Error(), "export-2.zip") {
+		t.Fatalf("create with broken part: %v", err)
+	}
+
+	// The same broken file added again is uploaded again rather than reused.
+	again, err := e.m.CreateUpload(ctx, "export-2.zip", int64(len(broken)), 1, "facebook")
+	if err != nil || again.ID == b.ID {
+		t.Fatalf("broken upload reused: %+v %v", again, err)
+	}
+
+	// A good part of an import that failed is reused without uploading it again.
+	g, _ := e.m.CreateUpload(ctx, "export.zip", int64(len(good)), 2, "facebook")
+	if _, err := e.m.WriteUpload(ctx, g.ID, 0, bytesReader(good)); err != nil {
+		t.Fatal(err)
+	}
+	id, err := e.m.Create(ctx, "facebook", []importer.FileRef{{Kind: "upload", ID: g.ID}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	e.wait(t, id, importer.StatusNeedsParts)
+	if err := e.m.Cancel(ctx, id); err != nil {
+		t.Fatal(err)
+	}
+	reused, err := e.m.CreateUpload(ctx, "export.zip", int64(len(good)), 2, "facebook")
+	if err != nil || reused.ID != g.ID || reused.Status != importer.UploadComplete {
+		t.Fatalf("good upload not reused: %+v %v", reused, err)
 	}
 }

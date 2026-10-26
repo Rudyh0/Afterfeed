@@ -125,7 +125,7 @@ func (t *Tree) add(p, name string) error {
 	zr, err := zip.NewReader(f, st.Size())
 	if err != nil {
 		f.Close()
-		return ErrNotZip
+		return fmt.Errorf("%w (%v, %d bytes)", ErrNotZip, err, st.Size())
 	}
 	return t.addZip(zr, f, f, p, name, st.Size())
 }

@@ -35,7 +35,7 @@ interface UploadInfo {
   received: number
   platform: string
   detected: string
-  status: 'uploading' | 'complete'
+  status: 'uploading' | 'complete' | 'invalid'
 }
 
 const DEFAULT_CHUNK = 16 * 1024 * 1024
@@ -53,7 +53,8 @@ function fromUpload(u: UploadInfo): Part {
     size: u.size,
     platform: u.platform,
     received: u.received,
-    status: u.status === 'complete' ? 'done' : 'paused',
+    status: u.status === 'complete' ? 'done' : u.status === 'invalid' ? 'error' : 'paused',
+    error: u.status === 'invalid' ? 'takein.upload_broken' : undefined,
     detected: u.status === 'complete' ? u.detected : undefined,
     uploadId: u.id,
   }
@@ -67,7 +68,9 @@ export async function loadUploads(platform: string) {
     const existing = uploader.parts.find((p) => p.uploadId === u.id)
     if (existing) {
       // Keep the local state of an upload that is running.
-      if (existing.status !== 'uploading' && existing.status !== 'waiting') {
+      if (u.status === 'invalid') {
+        Object.assign(existing, { received: u.received, status: 'error', error: 'takein.upload_broken' })
+      } else if (existing.status !== 'uploading' && existing.status !== 'waiting') {
         Object.assign(existing, { received: u.received, detected: u.detected, status: u.status === 'complete' ? 'done' : existing.file ? 'waiting' : 'paused' })
       }
     } else {
@@ -117,6 +120,10 @@ export async function addFiles(files: Iterable<File>, platform: string) {
       part.platform = platform
       part.status = u.status === 'complete' ? 'done' : 'waiting'
       part.error = undefined
+      if (u.status === 'invalid') {
+        part.status = 'error'
+        part.error = 'takein.upload_broken'
+      }
       if (!existing) uploader.parts.push(part)
     } catch (err) {
       uploader.parts.push({
@@ -238,6 +245,9 @@ async function run() {
           if (u.status === 'complete') {
             part.status = 'done'
             part.detected = u.detected
+          } else if (u.status === 'invalid') {
+            part.status = 'error'
+            part.error = 'takein.upload_broken'
           }
           failures = 0
         } catch (err) {

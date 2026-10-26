@@ -411,7 +411,9 @@
     "patience": "Even geduld. Dit kan even duren, afhankelijk van de grootte van je export.",
     "importing_any": "Je export wordt geïmporteerd",
     "count_of": "{done} van {total}",
-    "reconnecting": "Geen verbinding met de server. Opnieuw proberen…"
+    "reconnecting": "Geen verbinding met de server. Opnieuw proberen…",
+    "upload_broken": "Geen compleet zip-bestand. Download dit deel opnieuw, verwijder het hier en voeg het nieuwe bestand toe.",
+    "error_not_zip_named": "“{name}” is geen compleet zip-bestand. Download dit deel opnieuw en voeg het toe op het uploadscherm; de andere delen blijven staan."
   },
   "settings": {
     "title": "Instellingen",

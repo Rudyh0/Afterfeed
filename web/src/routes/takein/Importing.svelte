@@ -109,11 +109,20 @@
     }
   }
 
+  // "import.not_zip: mydata~1-2.zip: not a zip file (…)" names the file.
+  function notZipName(code: string): string {
+    const rest = code.slice('import.not_zip'.length).replace(/^:\s*/, '')
+    return rest.split(/:\s|\s\(/)[0]?.trim() ?? ''
+  }
+
   function errorText(code = ''): string {
     const platform = name
     if (code.startsWith('import.empty')) return t('takein.error_empty', { platform })
     if (code.startsWith('import.html_format')) return t('takein.error_html')
-    if (code.startsWith('import.not_zip')) return t('takein.error_not_zip')
+    if (code.startsWith('import.not_zip')) {
+      const file = notZipName(code)
+      return file ? t('takein.error_not_zip_named', { name: file }) : t('takein.error_not_zip')
+    }
     if (code.startsWith('import.file_gone')) return t('takein.error_file_gone')
     return t('takein.error_generic')
   }

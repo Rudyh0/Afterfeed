@@ -411,7 +411,9 @@
     "patience": "Please be patient. This can take a while, depending on the size of your export.",
     "importing_any": "Your export is being imported",
     "count_of": "{done} of {total}",
-    "reconnecting": "No connection to the server. Trying again…"
+    "reconnecting": "No connection to the server. Trying again…",
+    "upload_broken": "Not a complete zip file. Download this part again, remove it here and add the new file.",
+    "error_not_zip_named": "“{name}” is not a complete zip file. Download this part again and add it on the upload screen; the other parts are kept."
   },
   "settings": {
     "title": "Settings",

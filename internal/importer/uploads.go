@@ -1,12 +1,14 @@
 package importer
 
 import (
+	"archive/zip"
 	"context"
 	"crypto/rand"
 	"database/sql"
 	"encoding/hex"
 	"errors"
 	"io"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"syscall"
@@ -22,6 +24,9 @@ const ChunkSize = 16 << 20
 const (
 	UploadPartial  = "uploading"
 	UploadComplete = "complete"
+	// UploadInvalid is a complete upload that is not a readable zip file,
+	// for example because the download from the platform was incomplete.
+	UploadInvalid = "invalid"
 )
 
 // Upload is a file uploaded through the browser.
@@ -67,10 +72,26 @@ func (m *Manager) CreateUpload(ctx context.Context, name string, size, modified 
 		return nil, errors.New("upload.invalid")
 	}
 	var id string
+	// Uploads of an import that failed or was stopped can be used again, so
+	// adding the same file does not upload it a second time.
 	err := m.st.R.QueryRowContext(ctx, `SELECT id FROM uploads WHERE name = ? AND size = ? AND modified = ?
-		AND import_id IS NULL ORDER BY created_at DESC LIMIT 1`, name, size, modified).Scan(&id)
+		AND (import_id IS NULL OR import_id IN (SELECT id FROM imports WHERE status IN (?, ?)))
+		AND status != ? ORDER BY created_at DESC LIMIT 1`,
+		name, size, modified, StatusFailed, StatusCancelled, UploadInvalid).Scan(&id)
 	if err == nil {
 		u, err := m.GetUpload(ctx, id)
+		if err == nil && u.Status == UploadComplete {
+			if zerr := checkZip(m.uploadPath(id)); zerr != nil {
+				// Uploaded before files were checked: start a new upload.
+				slog.Warn("uploaded file is not a readable zip file", "name", u.Name, "size", u.Size, "err", zerr)
+				m.st.W.ExecContext(ctx, `UPDATE uploads SET status = ?, import_id = NULL WHERE id = ?`, UploadInvalid, id)
+				err = sql.ErrNoRows
+			}
+		}
+		if err == nil && u.ImportID != nil {
+			m.st.W.ExecContext(ctx, `UPDATE uploads SET import_id = NULL WHERE id = ?`, id)
+			u.ImportID = nil
+		}
 		if err == nil {
 			// The file on disk is what counts: it may be shorter after a crash.
 			if fi, err := os.Stat(m.uploadPath(id)); err == nil && fi.Size() < u.Received {
@@ -128,7 +149,7 @@ func (m *Manager) WriteUpload(ctx context.Context, id string, offset int64, r io
 	if err != nil {
 		return nil, err
 	}
-	if u.Status == UploadComplete {
+	if u.Status == UploadComplete || u.Status == UploadInvalid {
 		return u, nil
 	}
 	if offset != u.Received {
@@ -157,7 +178,14 @@ func (m *Manager) WriteUpload(ctx context.Context, id string, offset int64, r io
 	if u.Received == u.Size {
 		status = UploadComplete
 		f.Close()
-		detected = m.Detect(m.uploadPath(id), u.Name)
+		// Check the file now, so a broken part shows up in the list instead
+		// of when the import starts.
+		if err := checkZip(m.uploadPath(id)); err != nil {
+			status = UploadInvalid
+			slog.Warn("uploaded file is not a readable zip file", "name", u.Name, "size", u.Size, "err", err)
+		} else {
+			detected = m.Detect(m.uploadPath(id), u.Name)
+		}
 	}
 	if _, err := m.st.W.ExecContext(ctx, `UPDATE uploads SET received = ?, status = ?, detected = ?, updated_at = ? WHERE id = ?`,
 		u.Received, status, detected, store.Now(), id); err != nil {
@@ -255,4 +283,13 @@ func (m *Manager) CleanupUploads(ctx context.Context) error {
 		}
 	}
 	return nil
+}
+
+// checkZip reports whether a file is a zip file that can be read.
+func checkZip(p string) error {
+	zr, err := zip.OpenReader(p)
+	if err != nil {
+		return err
+	}
+	return zr.Close()
 }

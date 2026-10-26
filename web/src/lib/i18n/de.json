@@ -411,7 +411,9 @@
     "patience": "Bitte etwas Geduld. Das kann je nach Größe deines Exports eine Weile dauern.",
     "importing_any": "Dein Export wird importiert",
     "count_of": "{done} von {total}",
-    "reconnecting": "Keine Verbindung zum Server. Neuer Versuch …"
+    "reconnecting": "Keine Verbindung zum Server. Neuer Versuch …",
+    "upload_broken": "Keine vollständige ZIP-Datei. Lade diesen Teil erneut herunter, entferne ihn hier und füge die neue Datei hinzu.",
+    "error_not_zip_named": "„{name}“ ist keine vollständige ZIP-Datei. Lade diesen Teil erneut herunter und füge ihn beim Hochladen hinzu; die anderen Teile bleiben erhalten."
   },
   "settings": {
     "title": "Einstellungen",

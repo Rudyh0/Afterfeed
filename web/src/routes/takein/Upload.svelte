@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte'
   import Icon from '../../components/Icon.svelte'
-  import { get, post } from '../../lib/api'
+  import { ApiError, get, post } from '../../lib/api'
   import { errorMessage } from '../../lib/errors'
   import { formatBytes, t } from '../../lib/i18n/index.svelte'
   import { navigate, router } from '../../lib/router.svelte'
@@ -95,7 +95,13 @@
       clearParts(platform)
       navigate(`/take-in/import/${res.import.id}`)
     } catch (err) {
-      error = errorMessage(err)
+      if (err instanceof ApiError && err.code === 'import.not_zip') {
+        const file = err.message.replace(/^import\.not_zip:\s*/, '').split(/:\s|\s\(/)[0]
+        error = t('takein.error_not_zip_named', { name: file })
+        loadUploads(platform).catch(() => {})
+      } else {
+        error = errorMessage(err)
+      }
     } finally {
       starting = false
     }

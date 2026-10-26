@@ -411,7 +411,9 @@
     "patience": "Merci de patienter. Cela peut prendre un moment, selon la taille de votre export.",
     "importing_any": "Votre export est en cours d’import",
     "count_of": "{done} sur {total}",
-    "reconnecting": "Pas de connexion au serveur. Nouvelle tentative…"
+    "reconnecting": "Pas de connexion au serveur. Nouvelle tentative…",
+    "upload_broken": "Fichier zip incomplet. Téléchargez à nouveau cette partie, retirez-la ici et ajoutez le nouveau fichier.",
+    "error_not_zip_named": "« {name} » n’est pas un fichier zip complet. Téléchargez à nouveau cette partie et ajoutez-la sur l’écran d’envoi ; les autres parties sont conservées."
   },
   "settings": {
     "title": "Réglages",

@@ -411,7 +411,9 @@
     "patience": "Ten paciencia. Puede tardar un rato, según el tamaño de tu exportación.",
     "importing_any": "Se está importando tu exportación",
     "count_of": "{done} de {total}",
-    "reconnecting": "Sin conexión con el servidor. Reintentando…"
+    "reconnecting": "Sin conexión con el servidor. Reintentando…",
+    "upload_broken": "No es un archivo zip completo. Descarga esta parte de nuevo, quítala aquí y añade el archivo nuevo.",
+    "error_not_zip_named": "«{name}» no es un archivo zip completo. Descarga esta parte de nuevo y añádela en la pantalla de subida; las demás partes se conservan."
   },
   "settings": {
     "title": "Ajustes",

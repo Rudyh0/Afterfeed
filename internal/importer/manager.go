@@ -498,13 +498,21 @@ func (m *Manager) run(parent context.Context, id int64) {
 	default:
 		slog.Warn("import failed", "id", id, "err", runErr, "took", roundDuration(time.Since(began)))
 		finish(StatusFailed, errorCode(runErr))
+		// The uploads show up again on the upload screen, so a broken part
+		// can be replaced without uploading the others again.
+		m.st.W.ExecContext(context.WithoutCancel(ctx), `UPDATE uploads SET import_id = NULL WHERE import_id = ?`, id)
 	}
 }
 
+// errorCode is what the web app gets for a failed import: a code it knows,
+// followed by the details, such as the name of the file.
 func errorCode(err error) string {
 	for _, e := range []error{ErrEmpty, ErrHTMLFormat, ErrNotZip, ErrFileGone, ErrUnknownPlatform} {
 		if errors.Is(err, e) {
-			return e.Error()
+			if msg := err.Error(); strings.HasPrefix(msg, e.Error()) {
+				return msg
+			}
+			return e.Error() + ": " + err.Error()
 		}
 	}
 	return "import.failed: " + err.Error()
@@ -759,6 +767,9 @@ func (m *Manager) resolveRefs(ctx context.Context, files []FileRef) ([]FileRef, 
 			u, err := m.GetUpload(ctx, f.ID)
 			if err != nil {
 				return nil, fmt.Errorf("%w: upload %s", ErrFileGone, f.ID)
+			}
+			if u.Status == UploadInvalid {
+				return nil, fmt.Errorf("%w: %s", ErrNotZip, u.Name)
 			}
 			if u.Status != UploadComplete {
 				return nil, errors.New("import.upload_incomplete")
