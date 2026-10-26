@@ -1,14 +1,19 @@
 package media
 
 import (
+	"bufio"
 	"context"
 	"fmt"
+	"image"
+	"image/png"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
 	"unicode"
+
+	"github.com/rudyh0/afterfeed/internal/textfind"
 )
 
 // OCRLanguages are the Tesseract languages used to read text in images,
@@ -69,19 +74,30 @@ func tessdataDirs() []string {
 	return dirs
 }
 
-// ocrSize is the longest side of the image that is read: enough for
-// captions and signs, small enough to read fast.
-const ocrSize = 1600
+// ocrSize is the longest side of the image that lines are cut from:
+// enough for small print, plates and signs.
+const ocrSize = 2048
+
+// TextVersion identifies how text in images is read. Media read by an
+// older version are read again. Version 1 read whole pages with Tesseract;
+// version 2 first finds the lines of text with a detection model, which
+// also finds text in scenes, such as signs and number plates.
+const TextVersion = 2
 
 // ReadText returns the text in a photo or in the poster frame of a video,
-// including a caption overlay. Words the recogniser is unsure about are left
-// out, so photos without text give an empty result rather than noise.
+// including a caption overlay. A detection model finds the lines of text;
+// Tesseract reads them. Words the recogniser is unsure about are left out,
+// so photos without text give an empty result rather than noise.
 //
 // It is background work: it waits for a free background slot, so what is
 // on screen goes first.
 func (s *Service) ReadText(ctx context.Context, src Source) (string, error) {
 	if !s.CanReadText() || (src.Kind != Photo && src.Kind != Video) {
 		return "", ErrUnsupported
+	}
+	det, err := textfind.Default()
+	if err != nil {
+		return "", err
 	}
 	select {
 	case s.background <- struct{}{}:
@@ -117,18 +133,39 @@ func (s *Service) ReadText(ctx context.Context, src Source) (string, error) {
 	defer os.RemoveAll(dir)
 	// The image is made for reading only and not kept: the large preview
 	// is made when someone opens the photo.
-	img := filepath.Join(dir, "page.png")
+	page := filepath.Join(dir, "page.png")
 	if preview := s.CachePath(src.ID, Preview); fileExists(preview) {
-		_, err = s.run(ctx, time.Minute, s.tools.VipsThumb, preview, "--size", fmt.Sprintf("%dx%d>", ocrSize, ocrSize), "-o", img)
+		_, err = s.run(ctx, time.Minute, s.tools.VipsThumb, preview, "--size", fmt.Sprintf("%dx%d>", ocrSize, ocrSize),
+			"-o", page+"[compression=1]")
 	} else {
-		err = s.imageVariant(ctx, in, src.Overlay, ocrSize, img)
+		err = s.imageVariant(ctx, in, src.Overlay, ocrSize, page)
 	}
 	if err != nil {
 		return "", err
 	}
+	img, err := decodePNG(page)
+	if err != nil {
+		return "", err
+	}
+	rgb := textfind.NewRGB(img)
+	lines, err := det.Find(rgb)
+	if err != nil {
+		return "", err
+	}
+	if len(lines) == 0 {
+		return "", nil
+	}
+	sheet := textfind.Sheet(rgb, lines)
+	if sheet == nil {
+		return "", nil
+	}
+	sheetPath := filepath.Join(dir, "lines.png")
+	if err := encodePNG(sheetPath, sheet); err != nil {
+		return "", err
+	}
 	// Tesseract's own threads would compete with the other workers.
-	out, err := s.runEnv(ctx, 2*time.Minute, []string{"OMP_THREAD_LIMIT=1"}, s.tools.Tesseract, img, "stdout",
-		"-l", s.ocrLanguages(), "--psm", "3", "-c", "tessedit_create_tsv=1")
+	out, err := s.runEnv(ctx, 2*time.Minute, []string{"OMP_THREAD_LIMIT=1"}, s.tools.Tesseract, sheetPath, "stdout",
+		"-l", s.ocrLanguages(), "--psm", "6", "-c", "tessedit_create_tsv=1")
 	if err != nil {
 		return "", err
 	}
@@ -140,9 +177,32 @@ func fileExists(p string) bool {
 	return err == nil
 }
 
-// parseTSV turns Tesseract's word list into lines of text. A line is kept
-// when it has at least one clear word; within it, words that are fairly
-// certain are kept.
+func decodePNG(p string) (image.Image, error) {
+	f, err := os.Open(p)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+	return png.Decode(bufio.NewReader(f))
+}
+
+func encodePNG(p string, img image.Image) error {
+	f, err := os.Create(p)
+	if err != nil {
+		return err
+	}
+	enc := png.Encoder{CompressionLevel: png.BestSpeed}
+	if err := enc.Encode(f, img); err != nil {
+		f.Close()
+		return err
+	}
+	return f.Close()
+}
+
+// parseTSV turns Tesseract's word list into lines of text. Words it is
+// fairly sure of are kept, if they have at least two letters or digits or
+// are a number; a line is kept when one of its words is clearer still.
+// Single letters are mostly icons and edges.
 func parseTSV(tsv string) string {
 	type word struct {
 		text string
@@ -155,14 +215,16 @@ func parseTSV(tsv string) string {
 		strong := false
 		var keep []string
 		for _, w := range cur {
-			if w.conf >= 80 && letters(w.text) >= 3 || w.conf >= 80 && digits(w.text) >= 4 {
+			n := letters(w.text) + digits(w.text)
+			if w.conf < 60 || n == 0 || (n == 1 && digits(w.text) == 0) {
+				continue
+			}
+			keep = append(keep, w.text)
+			if w.conf >= 70 && n >= 2 {
 				strong = true
 			}
-			if w.conf >= 60 && (letters(w.text)+digits(w.text)) >= 1 {
-				keep = append(keep, w.text)
-			}
 		}
-		if strong && len(keep) > 0 {
+		if strong {
 			lines = append(lines, strings.Join(keep, " "))
 		}
 		cur = cur[:0]

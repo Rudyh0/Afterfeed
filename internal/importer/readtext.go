@@ -22,6 +22,10 @@ func (m *Manager) TextProgress() (left, total int64) {
 	return textLeft.Load(), textTotal.Load()
 }
 
+// textPending selects the photos and videos whose text has not been read,
+// or was read by an older reader. It takes the current version.
+const textPending = `(ocr_text IS NULL OR ocr_version < ?) AND kind IN ('photo', 'video')`
+
 // textJob is a memory with media whose text has not been read yet.
 type textJob struct {
 	memoryID, rel string
@@ -40,16 +44,15 @@ func (m *Manager) readTexts(ctx context.Context) error {
 	}
 	var pending int64
 	if err := m.st.R.QueryRowContext(ctx, `SELECT COUNT(*) FROM media
-		WHERE ocr_text IS NULL AND kind IN ('photo', 'video')`).Scan(&pending); err != nil {
+		WHERE `+textPending, media.TextVersion).Scan(&pending); err != nil {
 		return err
 	}
 	if pending == 0 {
 		return nil
 	}
 	rows, err := m.st.R.QueryContext(ctx, `SELECT mm.id, mm.path FROM memories mm
-		WHERE EXISTS (SELECT 1 FROM media md WHERE md.memory_id = mm.id
-			AND md.ocr_text IS NULL AND md.kind IN ('photo', 'video'))
-		ORDER BY mm.taken_at DESC`)
+		WHERE EXISTS (SELECT 1 FROM media WHERE media.memory_id = mm.id AND `+textPending+`)
+		ORDER BY mm.taken_at DESC`, media.TextVersion)
 	if err != nil {
 		return err
 	}
@@ -153,7 +156,7 @@ func (m *Manager) readMemoryText(ctx context.Context, j textJob, failures *atomi
 	texts := map[string]string{}
 	withText := 0
 	for _, md := range mem.Media {
-		if md.OCR != nil || (md.Kind != string(media.Photo) && md.Kind != string(media.Video)) {
+		if (md.OCR != nil && md.OCRVersion >= media.TextVersion) || (md.Kind != string(media.Photo) && md.Kind != string(media.Video)) {
 			continue
 		}
 		src := media.Source{ID: md.ID, Path: filepath.Join(dir, md.File), Kind: media.Kind(md.Kind), Mime: md.Mime}
@@ -165,7 +168,8 @@ func (m *Manager) readMemoryText(ctx context.Context, j textJob, failures *atomi
 			break
 		}
 		if err != nil {
-			// Not stored: it is tried again in a later round.
+			// Not stored: it is tried again in a later round. Text from an
+			// older reader stays meanwhile.
 			failures.Add(1)
 			slog.Debug("read text", "file", src.Path, "err", err)
 			continue
@@ -196,6 +200,7 @@ func (m *Manager) saveText(ctx context.Context, j textJob, texts map[string]stri
 		if t, ok := texts[mem.Media[i].ID]; ok {
 			t := t
 			mem.Media[i].OCR = &t
+			mem.Media[i].OCRVersion = media.TextVersion
 		}
 	}
 	if err := m.lib.SaveMemory(j.rel, mem); err != nil {
@@ -215,7 +220,7 @@ func (m *Manager) indexText(ctx context.Context, memoryID string, mem *library.M
 		if md.OCR == nil {
 			continue
 		}
-		if _, err := tx.Exec(`UPDATE media SET ocr_text = ? WHERE id = ?`, *md.OCR, md.ID); err != nil {
+		if _, err := tx.Exec(`UPDATE media SET ocr_text = ?, ocr_version = ? WHERE id = ?`, *md.OCR, md.OCRVersion, md.ID); err != nil {
 			return err
 		}
 	}
@@ -228,7 +233,7 @@ func (m *Manager) indexText(ctx context.Context, memoryID string, mem *library.M
 
 func countPending(ctx context.Context, m *Manager, memoryID string) int {
 	var n int
-	m.st.R.QueryRowContext(ctx, `SELECT COUNT(*) FROM media WHERE memory_id = ? AND ocr_text IS NULL
-		AND kind IN ('photo', 'video')`, memoryID).Scan(&n)
+	m.st.R.QueryRowContext(ctx, `SELECT COUNT(*) FROM media WHERE memory_id = ? AND `+textPending,
+		memoryID, media.TextVersion).Scan(&n)
 	return n
 }

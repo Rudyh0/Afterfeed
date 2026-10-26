@@ -18,9 +18,11 @@ import (
 	"hash/fnv"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"sync"
 	"time"
+	"unicode"
 
 	"github.com/rudyh0/afterfeed/internal/store"
 )
@@ -106,9 +108,15 @@ type Media struct {
 	// OCR is the text recognised in the photo or video frame. It is nil
 	// until the file has been looked at, and empty when it has no text.
 	OCR *string `json:"ocr,omitempty"`
+	// OCRVersion is the version of the reader that read OCR. Media read by
+	// an older reader are read again.
+	OCRVersion int `json:"ocr_version,omitempty"`
 }
 
-// OCRText joins the text recognised in all media of a memory.
+// OCRText joins the text recognised in all media of a memory, for the
+// search index. Codes written with dashes, dots or a space, such as number
+// plates and postcodes, are added without them too, so that "GX707Z" finds
+// "GX-707-Z" and a plate read as "GX-707Z".
 func (m *Memory) OCRText() string {
 	var parts []string
 	for _, md := range m.Media {
@@ -116,7 +124,34 @@ func (m *Memory) OCRText() string {
 			parts = append(parts, *md.OCR)
 		}
 	}
-	return strings.Join(parts, "\n")
+	text := strings.Join(parts, "\n")
+	if codes := Codes(text); len(codes) > 0 {
+		text += "\n" + strings.Join(codes, " ")
+	}
+	return text
+}
+
+var (
+	codePattern     = regexp.MustCompile(`\b[A-Za-z0-9]{1,4}(?:[-.][A-Za-z0-9]{1,4}){1,3}\b`)
+	postcodePattern = regexp.MustCompile(`\b[0-9]{4} [A-Za-z]{2}\b`)
+)
+
+// Codes returns the codes in a text with letters and digits written in
+// parts, such as "GX-707-Z" or "9351 AB", joined: "GX707Z", "9351AB".
+func Codes(text string) []string {
+	var out []string
+	seen := map[string]bool{}
+	for _, m := range append(codePattern.FindAllString(text, -1), postcodePattern.FindAllString(text, -1)...) {
+		joined := strings.NewReplacer("-", "", ".", "", " ", "").Replace(m)
+		hasDigit := strings.ContainsAny(joined, "0123456789")
+		hasLetter := strings.IndexFunc(joined, unicode.IsLetter) >= 0
+		if !hasDigit || !hasLetter || len(joined) < 4 || len(joined) > 10 || seen[joined] {
+			continue
+		}
+		seen[joined] = true
+		out = append(out, joined)
+	}
+	return out
 }
 
 // HashID derives a stable identifier from the given parts.
@@ -314,10 +349,10 @@ func (l *Library) IndexMemory(ctx context.Context, tx *sql.Tx, rel string, m *Me
 		}
 		_, err := tx.ExecContext(ctx, `INSERT INTO media (
 				id, memory_id, position, media_key, kind, file, overlay, text, mime,
-				width, height, duration, size, sha256, taken_at, lat, lon, ocr_text)
-			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+				width, height, duration, size, sha256, taken_at, lat, lon, ocr_text, ocr_version)
+			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 			md.ID, m.ID, i, md.Key, md.Kind, md.File, md.Overlay, md.Text, md.Mime,
-			md.Width, md.Height, md.Duration, md.Size, md.SHA256, taken, md.Lat, md.Lon, md.OCR)
+			md.Width, md.Height, md.Duration, md.Size, md.SHA256, taken, md.Lat, md.Lon, md.OCR, md.OCRVersion)
 		if err != nil {
 			return fmt.Errorf("index media %s: %w", md.ID, err)
 		}

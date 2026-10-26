@@ -195,9 +195,10 @@ func TestParseTSV(t *testing.T) {
 		"5\t1\t1\t1\t1\t1\t0\t0\t1\t1\t96\tZomer\n" +
 		"5\t1\t1\t1\t1\t2\t0\t0\t1\t1\t95\top\n" +
 		"5\t1\t1\t1\t1\t3\t0\t0\t1\t1\t95\tTexel\n" +
-		"5\t1\t2\t1\t1\t1\t0\t0\t1\t1\t91\tle\n" +
-		"5\t1\t3\t1\t1\t1\t0\t0\t1\t1\t30\tStrand\n"
-	if got := parseTSV(tsv); got != "Zomer op Texel" {
+		"5\t1\t2\t1\t1\t1\t0\t0\t1\t1\t91\tO\n" +
+		"5\t1\t3\t1\t1\t1\t0\t0\t1\t1\t30\tStrand\n" +
+		"5\t1\t4\t1\t1\t1\t0\t0\t1\t1\t74\tGX-707-Z\n"
+	if got := parseTSV(tsv); got != "Zomer op Texel\nGX-707-Z" {
 		t.Errorf("parseTSV = %q", got)
 	}
 }
@@ -234,5 +235,55 @@ func TestReadTextInOverlay(t *testing.T) {
 	}
 	if !strings.Contains(text, "Pannenkoeken") {
 		t.Errorf("text %q lacks the caption", text)
+	}
+}
+
+// Text in a scene, like a number plate on a car, is found too; a photo
+// without text gives nothing.
+func TestReadTextPlate(t *testing.T) {
+	s := New(t.TempDir())
+	if !s.CanReadText() || s.tools.Vips == "" {
+		t.Skip("tesseract, its language models or vips are not installed")
+	}
+	dir := t.TempDir()
+	v := func(name string) string { return filepath.Join(dir, name) }
+	run := func(args ...string) {
+		t.Helper()
+		if out, err := exec.Command("vips", args...).CombinedOutput(); err != nil {
+			t.Fatalf("vips %v: %v %s", args, err, out)
+		}
+	}
+	// A grainy grey photo.
+	run("gaussnoise", v("bg.v"), "1500", "2000", "--mean", "128", "--sigma", "40")
+	run("cast", v("bg.v"), v("bg8.v"), "uchar")
+	run("bandjoin", v("bg8.v")+" "+v("bg8.v")+" "+v("bg8.v"), v("bg3.v"))
+	run("copy", v("bg3.v"), v("empty.jpg"))
+	text, err := s.ReadText(context.Background(), Source{ID: "empty", Path: v("empty.jpg"), Kind: Photo, Mime: "image/jpeg"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if text != "" {
+		t.Errorf("a photo without text gave %q", text)
+	}
+	// A yellow plate with black letters, slightly tilted.
+	if out, err := exec.Command("vips", "text", v("t.v"), "GX-707-Z", "--dpi", "600", "--font", "sans bold").CombinedOutput(); err != nil {
+		t.Skipf("vips cannot draw text here: %v %s", err, out)
+	}
+	run("embed", v("t.v"), v("tpad.v"), "30", "18", "540", "110")
+	run("invert", v("tpad.v"), v("ink.v"))
+	run("black", v("yel.v"), "540", "110", "--bands", "3")
+	run("linear", v("yel.v"), v("yel2.v"), "0 0 0", "235 190 30", "--uchar")
+	run("bandjoin", v("ink.v")+" "+v("ink.v")+" "+v("ink.v"), v("ink3.v"))
+	run("multiply", v("yel2.v"), v("ink3.v"), v("m.v"))
+	run("linear", v("m.v"), v("plate.v"), "0.0039215", "0", "--uchar")
+	run("rotate", v("plate.v"), v("plater.v"), "4", "--background", "128 128 128")
+	run("insert", v("bg3.v"), v("plater.v"), v("car.jpg"), "450", "1300")
+
+	text, err = s.ReadText(context.Background(), Source{ID: "plate", Path: v("car.jpg"), Kind: Photo, Mime: "image/jpeg"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(text, "GX-707-Z") {
+		t.Errorf("text %q lacks the plate", text)
 	}
 }

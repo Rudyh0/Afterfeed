@@ -160,14 +160,13 @@ func mercator(lat, lon, zoom float64) (float64, float64) {
 func clusterPoints(points []mapPoint, cell float64) []cluster {
 	type group struct {
 		x, y      float64 // sum of pixel positions
-		lat, lon  float64 // sum of positions
-		n         int
+		members   []int
 		best      string
 		bestMedia int
 	}
 	cells := map[[2]int64]*group{}
 	var order []*group
-	for _, p := range points {
+	for i, p := range points {
 		k := [2]int64{int64(math.Floor(p.x / cell)), int64(math.Floor(p.y / cell))}
 		g := cells[k]
 		if g == nil {
@@ -177,9 +176,7 @@ func clusterPoints(points []mapPoint, cell float64) []cluster {
 		}
 		g.x += p.x
 		g.y += p.y
-		g.lat += p.lat
-		g.lon += p.lon
-		g.n++
+		g.members = append(g.members, i)
 		// The cover is the memory with the most photos and videos, the
 		// newest of those (points come newest first).
 		if p.media > g.bestMedia {
@@ -187,19 +184,18 @@ func clusterPoints(points []mapPoint, cell float64) []cluster {
 		}
 	}
 	// Biggest groups first, so smaller neighbours join them.
-	sort.SliceStable(order, func(i, j int) bool { return order[i].n > order[j].n })
+	sort.SliceStable(order, func(i, j int) bool { return len(order[i].members) > len(order[j].members) })
 	var kept []*group
 	for _, g := range order {
-		cx, cy := g.x/float64(g.n), g.y/float64(g.n)
+		n := float64(len(g.members))
+		cx, cy := g.x/n, g.y/n
 		merged := false
 		for _, k := range kept {
-			kx, ky := k.x/float64(k.n), k.y/float64(k.n)
-			if math.Hypot(cx-kx, cy-ky) < cell {
+			kn := float64(len(k.members))
+			if math.Hypot(cx-k.x/kn, cy-k.y/kn) < cell {
 				k.x += g.x
 				k.y += g.y
-				k.lat += g.lat
-				k.lon += g.lon
-				k.n += g.n
+				k.members = append(k.members, g.members...)
 				if g.bestMedia > k.bestMedia {
 					k.best, k.bestMedia = g.best, g.bestMedia
 				}
@@ -216,9 +212,41 @@ func clusterPoints(points []mapPoint, cell float64) []cluster {
 	}
 	out := make([]cluster, 0, len(kept))
 	for _, g := range kept {
-		out = append(out, cluster{Lat: g.lat / float64(g.n), Lon: g.lon / float64(g.n), Count: g.n, MemoryID: g.best})
+		lat, lon := densest(points, g.members, cell/4)
+		out = append(out, cluster{Lat: lat, Lon: lon, Count: len(g.members), MemoryID: g.best})
 	}
 	return out
+}
+
+// densest returns where most of the members are: the middle of the busiest
+// small square. The average of all members could be between them, for
+// example in the sea between the mainland and an island.
+func densest(points []mapPoint, members []int, size float64) (lat, lon float64) {
+	type spot struct {
+		lat, lon float64
+		n        int
+	}
+	spots := map[[2]int64]*spot{}
+	var best *spot
+	for _, i := range members {
+		p := points[i]
+		k := [2]int64{int64(math.Floor(p.x / size)), int64(math.Floor(p.y / size))}
+		s := spots[k]
+		if s == nil {
+			s = &spot{}
+			spots[k] = s
+		}
+		s.lat += p.lat
+		s.lon += p.lon
+		s.n++
+		if best == nil || s.n > best.n {
+			best = s
+		}
+	}
+	if best == nil {
+		return 0, 0
+	}
+	return best.lat / float64(best.n), best.lon / float64(best.n)
 }
 
 // coverMedia adds the first photo or video of each cluster's memory.

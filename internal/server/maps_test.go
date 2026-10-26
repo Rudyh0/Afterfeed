@@ -36,6 +36,27 @@ func TestClusterPoints(t *testing.T) {
 	}
 }
 
+// A cluster spread over the mainland and an island is placed where most of
+// its memories are, not at their average in the sea.
+func TestClusterOnLand(t *testing.T) {
+	raw := []mapPoint{
+		{id: "bcn1", lat: 41.3874, lon: 2.1686}, {id: "bcn2", lat: 41.3851, lon: 2.1734},
+		{id: "bcn3", lat: 41.4036, lon: 2.1744}, {id: "pmi1", lat: 39.5696, lon: 2.6502},
+		{id: "pmi2", lat: 39.5710, lon: 2.6470}, {id: "vlc", lat: 39.4699, lon: -0.3763},
+	}
+	for i := range raw {
+		raw[i].x, raw[i].y = mercator(raw[i].lat, raw[i].lon, 4)
+	}
+	out := clusterPoints(raw, 60)
+	if len(out) != 1 {
+		t.Fatalf("%d clusters, want 1: %+v", len(out), out)
+	}
+	c := out[0]
+	if math.Abs(c.Lat-41.39) > 0.1 || math.Abs(c.Lon-2.17) > 0.1 {
+		t.Errorf("cluster at %.3f,%.3f, want Barcelona", c.Lat, c.Lon)
+	}
+}
+
 func TestMercator(t *testing.T) {
 	x, y := mercator(0, 0, 0)
 	if math.Abs(x-128) > 1e-9 || math.Abs(y-128) > 1e-9 {

@@ -242,7 +242,7 @@ func (s *Service) imageVariant(ctx context.Context, in, overlay string, size int
 	}
 	target := out + "[Q=80,strip]"
 	if strings.HasSuffix(out, ".png") {
-		target = out
+		target = out + "[compression=1]"
 	}
 	if !strings.Contains(in, "[") {
 		in += "[0]"

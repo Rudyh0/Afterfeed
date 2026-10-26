@@ -54,7 +54,7 @@ func TestReadTextInPhotos(t *testing.T) {
 	e.m.PrepareNew(mem.ID)
 
 	deadline := time.Now().Add(60 * time.Second)
-	for e.count(t, `SELECT COUNT(*) FROM media WHERE ocr_text IS NULL`) > 0 {
+	for e.count(t, `SELECT COUNT(*) FROM media WHERE ocr_text IS NULL OR ocr_version < 2`) > 0 {
 		if time.Now().After(deadline) {
 			t.Fatal("the text was not read")
 		}
@@ -72,6 +72,37 @@ func TestReadTextInPhotos(t *testing.T) {
 	}
 	if n := e.count(t, `SELECT COUNT(*) FROM memories_fts WHERE memories_fts MATCH '"strandpaviljoen"*'`); n != 1 {
 		t.Errorf("search for a word in the photo found %d memories, want 1", n)
+	}
+
+	if saved.Media[0].OCRVersion != media.TextVersion {
+		t.Errorf("reader version = %d", saved.Media[0].OCRVersion)
+	}
+
+	// Text read by an older reader is read again; its text stays
+	// searchable until then.
+	old := "oude tekst"
+	saved.Media[0].OCR, saved.Media[0].OCRVersion = &old, 0
+	if err := e.lib.SaveMemory(rel, saved); err != nil {
+		t.Fatal(err)
+	}
+	tx, _ = e.st.W.BeginTx(ctx, nil)
+	if err := e.lib.IndexMemory(ctx, tx, rel, saved, 0); err != nil {
+		t.Fatal(err)
+	}
+	tx.Commit()
+	if n := e.count(t, `SELECT COUNT(*) FROM memories_fts WHERE memories_fts MATCH '"oude"*'`); n != 1 {
+		t.Errorf("old text not searchable: %d", n)
+	}
+	e.m.PrepareNew(mem.ID)
+	deadline = time.Now().Add(60 * time.Second)
+	for e.count(t, `SELECT COUNT(*) FROM media WHERE ocr_version < 2`) > 0 {
+		if time.Now().After(deadline) {
+			t.Fatal("the text was not read again")
+		}
+		time.Sleep(100 * time.Millisecond)
+	}
+	if n := e.count(t, `SELECT COUNT(*) FROM memories_fts WHERE memories_fts MATCH '"strandpaviljoen"*'`); n != 1 {
+		t.Errorf("after reading again, search found %d memories, want 1", n)
 	}
 
 	// A rebuild of the index keeps the text without reading it again.

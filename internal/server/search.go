@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 	"unicode"
+
+	"github.com/rudyh0/afterfeed/internal/library"
 )
 
 // searchQuery is a parsed search. The web app recognises dates, seasons and
@@ -66,7 +68,13 @@ func ftsQuery(text string) string {
 		if w == "" {
 			continue
 		}
-		parts = append(parts, `"`+strings.ReplaceAll(w, `"`, `""`)+`"*`)
+		q := `"` + strings.ReplaceAll(w, `"`, `""`) + `"*`
+		// A code with dashes, such as a number plate, also matches its
+		// form without them, which the index has for text in photos.
+		if joined := strings.ReplaceAll(w, "-", ""); joined != w && library.Codes(w) != nil {
+			q = `(` + q + ` OR "` + strings.ReplaceAll(joined, `"`, `""`) + `"*)`
+		}
+		parts = append(parts, q)
 	}
 	return strings.Join(parts, " ")
 }
