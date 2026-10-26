@@ -198,7 +198,9 @@ func (s *storeSink) storeMemory(im *Memory) error {
 			hasMedia = true
 		}
 	}
-	if !hasMedia && strings.TrimSpace(mem.Text) == "" && mem.Link == "" && mem.Place == nil {
+	// Without its photo or video, a memory that had nothing else but a place
+	// is left out: it would be an empty card.
+	if !hasMedia && strings.TrimSpace(mem.Text) == "" && mem.Link == "" && (mem.Place == nil || len(im.Media) > 0) {
 		return errSkip
 	}
 

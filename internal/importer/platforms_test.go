@@ -1,12 +1,14 @@
 package importer_test
 
 import (
+	"archive/zip"
 	"context"
 	"os"
 	"path/filepath"
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/rudyh0/afterfeed/internal/archive"
 	"github.com/rudyh0/afterfeed/internal/importer"
@@ -259,5 +261,71 @@ func TestSnapchat(t *testing.T) {
 	r = read(t, im, tree)
 	if len(r.memories) != 0 || len(r.problems) != 1 {
 		t.Errorf("without memories: %d memories, problems %v", len(r.memories), r.problems)
+	}
+}
+
+// Newer Snapchat exports list Memories without ids. Files are then paired by
+// the time in the zip file, or per day when the numbers agree.
+func TestSnapchatWithoutIDs(t *testing.T) {
+	dir := t.TempDir()
+	p := filepath.Join(dir, "mydata~1.zip")
+	f, err := os.Create(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	zw := zip.NewWriter(f)
+	add := func(name string, mod time.Time, body string) {
+		w, err := zw.CreateHeader(&zip.FileHeader{Name: name, Method: zip.Store, Modified: mod})
+		if err != nil {
+			t.Fatal(err)
+		}
+		w.Write([]byte(body))
+	}
+	at := func(s string) time.Time { v, _ := time.Parse("2006-01-02 15:04:05", s); return v.UTC() }
+	export := at("2026-10-20 08:00:00")
+	add("json/memories_history.json", export, js(map[string]any{"Saved Media": []any{
+		map[string]any{"Date": "2025-07-30 10:00:00 UTC", "Media Type": "Image", "Location": "Latitude, Longitude: 52.1, 4.3"},
+		map[string]any{"Date": "2025-07-30 14:00:00 UTC", "Media Type": "Image", "Location": "Latitude, Longitude: 52.2, 4.4"},
+		map[string]any{"Date": "2025-07-30 20:00:00 UTC", "Media Type": "Image", "Location": "Latitude, Longitude: 52.3, 4.5"},
+		map[string]any{"Date": "2025-07-28 09:00:00 UTC", "Media Type": "Image", "Location": ""},
+		map[string]any{"Date": "2025-07-28 09:30:00 UTC", "Media Type": "Video", "Location": ""},
+	}}))
+	// Zip times that are the capture times.
+	add("memories/2025-07-30_aaaa-main.jpg", at("2025-07-30 20:00:10"), jpeg)
+	add("memories/2025-07-30_bbbb-main.jpg", at("2025-07-30 14:00:30"), jpeg)
+	// Zip times of the export, and a video listed as a photo.
+	add("memories/2025-07-28_cccc-main.jpg", export, jpeg)
+	add("memories/2025-07-28_dddd-main.jpg", export, jpeg)
+	zw.Close()
+	f.Close()
+	tree, err := archive.Open([]string{p}, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer tree.Close()
+
+	r := read(t, snapchat.New(), tree)
+	byFile := map[string]*importer.Memory{}
+	missing := 0
+	for _, m := range r.memories {
+		if m.Media[0].File == nil {
+			missing++
+			continue
+		}
+		byFile[m.Media[0].File.Name()] = m
+	}
+	if missing != 1 || len(byFile) != 4 {
+		t.Fatalf("missing = %d, files = %d, want 1 and 4", missing, len(byFile))
+	}
+	if got := byFile["2025-07-30_aaaa-main.jpg"].TakenAt.Format("15:04"); got != "20:00" {
+		t.Errorf("aaaa taken at %s, want 20:00", got)
+	}
+	if m := byFile["2025-07-30_bbbb-main.jpg"]; m.TakenAt.Format("15:04") != "14:00" || m.Place == nil {
+		t.Errorf("bbbb = %v %v, want 14:00 with a place", m.TakenAt, m.Place)
+	}
+	for _, name := range []string{"2025-07-28_cccc-main.jpg", "2025-07-28_dddd-main.jpg"} {
+		if m := byFile[name]; m.TakenAt.Format("2006-01-02") != "2025-07-28" || m.TakenAt.Hour() != 9 {
+			t.Errorf("%s taken at %v, want an entry of that morning", name, m.TakenAt)
+		}
 	}
 }

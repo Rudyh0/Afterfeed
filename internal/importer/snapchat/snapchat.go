@@ -5,6 +5,7 @@ package snapchat
 import (
 	"context"
 	"errors"
+	"fmt"
 	"path"
 	"regexp"
 	"sort"
@@ -79,12 +80,109 @@ type entry struct {
 	ids      []string
 	used     bool
 	source   string
+	// dup numbers entries that are otherwise the same, such as photos taken
+	// in the same second in an export without ids.
+	dup int
 }
 
 func (e *entry) key() string {
 	ids := append([]string(nil), e.ids...)
 	sort.Strings(ids)
-	return "memory:" + importer.Hash(e.at.Format(time.RFC3339), string(e.kind), strings.Join(ids, ","))
+	k := "memory:" + importer.Hash(e.at.Format(time.RFC3339), string(e.kind), strings.Join(ids, ","))
+	if e.dup > 0 {
+		k += fmt.Sprintf("#%d", e.dup+1)
+	}
+	return k
+}
+
+type matched struct {
+	g *memGroup
+	e *entry
+}
+
+// pairDay pairs the files of one day with the entries of that day that have
+// no file yet. When the zip file times are the times the memories were
+// taken, each file gets the nearest entry within a few minutes. Otherwise,
+// files and entries are paired in order, but only when their numbers agree.
+func pairDay(es []*entry, gs []*memGroup) ([]matched, []*memGroup) {
+	var free []*entry
+	for _, e := range es {
+		if !e.used {
+			free = append(free, e)
+		}
+	}
+	if len(free) == 0 || len(gs) == 0 {
+		return nil, gs
+	}
+	sort.SliceStable(free, func(i, j int) bool { return free[i].at.Before(free[j].at) })
+	var out []matched
+	rest := gs
+	if timed(gs) {
+		const window = 5 * time.Minute
+		rest = nil
+		for _, g := range gs {
+			var best *entry
+			var bestDiff time.Duration
+			for _, e := range free {
+				if e.used {
+					continue
+				}
+				d := g.main.Modified.Sub(e.at)
+				if d < 0 {
+					d = -d
+				}
+				if d <= window && (best == nil || d < bestDiff) {
+					best, bestDiff = e, d
+				}
+			}
+			if best != nil {
+				best.used = true
+				out = append(out, matched{g, best})
+			} else {
+				rest = append(rest, g)
+			}
+		}
+		var still []*entry
+		for _, e := range free {
+			if !e.used {
+				still = append(still, e)
+			}
+		}
+		free = still
+	}
+	if len(rest) > 0 && len(rest) == len(free) {
+		sort.SliceStable(rest, func(i, j int) bool { return groupTime(rest[i]).Before(groupTime(rest[j])) })
+		for i, g := range rest {
+			free[i].used = true
+			out = append(out, matched{g, free[i]})
+		}
+		rest = nil
+	}
+	return out, rest
+}
+
+// timed reports whether the zip times of these files fall on the day in
+// their names and differ from each other, so they can be the times the
+// memories were taken rather than the time the export was made.
+func timed(gs []*memGroup) bool {
+	seen := map[int64]bool{}
+	for _, g := range gs {
+		m := g.main.Modified
+		if m.IsZero() || m.UTC().Format("2006-01-02") != g.date {
+			return false
+		}
+		seen[m.Unix()] = true
+	}
+	return len(gs) == 1 || len(seen) > 1
+}
+
+// groupTime orders files of one day: by zip time when it is on that day,
+// otherwise by name.
+func groupTime(g *memGroup) time.Time {
+	if m := g.main.Modified; !m.IsZero() && m.UTC().Format("2006-01-02") == g.date {
+		return m
+	}
+	return time.Time{}
 }
 
 type memGroup struct {
@@ -138,6 +236,12 @@ func readMemories(tree *archive.Tree, sink importer.Sink) error {
 			entries = append(entries, e)
 		}
 	}
+	seenKeys := map[string]int{}
+	for _, e := range entries {
+		k := e.key()
+		e.dup = seenKeys[k]
+		seenKeys[k]++
+	}
 
 	// Group the media files with their overlays. Overlays can be in another
 	// part than their photo, so groups use the name without folder.
@@ -179,10 +283,6 @@ func readMemories(tree *archive.Tree, sink importer.Sink) error {
 	}
 	sort.Strings(bases)
 
-	type matched struct {
-		g *memGroup
-		e *entry
-	}
 	var out []matched
 	var unmatched []*memGroup
 	for _, b := range bases {
@@ -204,9 +304,9 @@ func readMemories(tree *archive.Tree, sink importer.Sink) error {
 			unmatched = append(unmatched, g)
 		}
 	}
-	// Files without a matching id: pair them with the remaining entries of
-	// the same day and type, but only when the numbers agree, so a pairing
-	// is never a guess.
+	// Files without a matching id are paired with the remaining entries of
+	// the same day: by time when the files carry it, otherwise in order but
+	// only when the numbers agree, so a pairing is never a guess.
 	type dayKind struct {
 		day  string
 		kind media.Kind
@@ -223,20 +323,37 @@ func readMemories(tree *archive.Tree, sink importer.Sink) error {
 		k := dayKind{g.date, media.Sniff(nil, g.main.Name()).Kind}
 		files[k] = append(files[k], g)
 	}
+	var left []*memGroup
 	for k, gs := range files {
-		es := pool[k]
-		if len(es) == len(gs) {
-			sort.Slice(es, func(i, j int) bool { return es[i].at.Before(es[j].at) })
-			for i, g := range gs {
-				es[i].used = true
-				out = append(out, matched{g, es[i]})
-			}
-		} else {
-			for _, g := range gs {
-				out = append(out, matched{g, nil})
-			}
+		paired, rest := pairDay(pool[k], gs)
+		for _, p := range paired {
+			out = append(out, matched{p.g, p.e})
+		}
+		left = append(left, rest...)
+	}
+	// What is left of a day may differ in type between the list and the
+	// files, such as a video saved as a photo: pair it per day only.
+	byDay := map[string][]*memGroup{}
+	for _, g := range left {
+		byDay[g.date] = append(byDay[g.date], g)
+	}
+	dayPool := map[string][]*entry{}
+	for _, e := range entries {
+		if !e.used {
+			d := e.at.Format("2006-01-02")
+			dayPool[d] = append(dayPool[d], e)
 		}
 	}
+	for d, gs := range byDay {
+		paired, rest := pairDay(dayPool[d], gs)
+		for _, p := range paired {
+			out = append(out, matched{p.g, p.e})
+		}
+		for _, g := range rest {
+			out = append(out, matched{g, nil})
+		}
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].g.base < out[j].g.base })
 
 	for _, mt := range out {
 		g := mt.g
