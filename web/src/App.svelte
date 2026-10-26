@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount, type Component } from 'svelte'
+  import PageBoundary from './components/PageBoundary.svelte'
   import Shell from './components/Shell.svelte'
   import { t } from './lib/i18n/index.svelte'
   import { loadLibrary } from './lib/library.svelte'
@@ -96,7 +97,7 @@
 {:else if session.unreachable}
   <Unreachable />
 {:else if router.path.startsWith('/take-in') && (session.setupRequired || session.authenticated)}
-  <TakeIn />
+  <PageBoundary><TakeIn /></PageBoundary>
 {:else if !session.authenticated}
   <Login />
 {:else if session.user?.must_change_password}
@@ -104,12 +105,12 @@
 {:else if resolved}
   {@const Page = resolved?.route.component ?? lazyPages[resolved?.route.pattern ?? '']}
   {#if resolved?.route.bare}
-    {#if Page}<Page params={resolved?.params ?? {}} />{/if}
+    {#if Page}<PageBoundary><Page params={resolved?.params ?? {}} /></PageBoundary>{/if}
   {:else}
     <Shell bleed={resolved?.route.bleed}>
       {#if Page}
         {#key resolved?.route.pattern}
-          <Page params={resolved?.params ?? {}} />
+          <PageBoundary><Page params={resolved?.params ?? {}} /></PageBoundary>
         {/key}
       {:else}
         <p class="visually-hidden">{t('common.loading')}</p>

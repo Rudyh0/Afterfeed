@@ -164,7 +164,7 @@
              aria-activedescendant={open && hits[active] ? `${id}-opt-${active}` : undefined} />
       {#if open}
         <ul class="hits" id={listId} role="listbox">
-          {#each hits as h, i (h.name + h.lat + h.lon)}
+          {#each hits as h, i (i)}
             <li id={`${id}-opt-${i}`} role="option" aria-selected={i === active}>
               <button type="button" class:active={i === active} tabindex="-1"
                       onmousedown={(e) => e.preventDefault()} onclick={() => choose(h)}>

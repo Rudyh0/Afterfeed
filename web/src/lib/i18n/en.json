@@ -413,7 +413,11 @@
     "count_of": "{done} of {total}",
     "reconnecting": "No connection to the server. Trying again…",
     "upload_broken": "Not a complete zip file. Download this part again, remove it here and add the new file.",
-    "error_not_zip_named": "“{name}” is not a complete zip file. Download this part again and add it on the upload screen; the other parts are kept."
+    "error_not_zip_named": "“{name}” is not a complete zip file. Download this part again and add it on the upload screen; the other parts are kept.",
+    "missing_few_body_one": "{count} of {total} items has no file in the added zip files. If you added all parts, it is not in the export itself.",
+    "missing_few_body_other": "{count} of {total} items have no file in the added zip files. If you added all parts, they are not in the export itself.",
+    "import_without_count_one": "Import without this one",
+    "import_without_count_other": "Import without these {count}"
   },
   "settings": {
     "title": "Settings",
@@ -503,7 +507,9 @@
     "internal": "Something went wrong.",
     "network": "No connection to the server.",
     "not_found": "This page does not exist.",
-    "go_home": "Go to Today"
+    "go_home": "Go to Today",
+    "page_failed": "This page could not be shown.",
+    "reload": "Reload"
   },
   "guide": {
     "facebook": {

@@ -413,7 +413,11 @@
     "count_of": "{done} de {total}",
     "reconnecting": "Sin conexión con el servidor. Reintentando…",
     "upload_broken": "No es un archivo zip completo. Descarga esta parte de nuevo, quítala aquí y añade el archivo nuevo.",
-    "error_not_zip_named": "«{name}» no es un archivo zip completo. Descarga esta parte de nuevo y añádela en la pantalla de subida; las demás partes se conservan."
+    "error_not_zip_named": "«{name}» no es un archivo zip completo. Descarga esta parte de nuevo y añádela en la pantalla de subida; las demás partes se conservan.",
+    "missing_few_body_one": "{count} de {total} elementos no tiene archivo en los zip añadidos. Si añadiste todas las partes, no está en la propia exportación.",
+    "missing_few_body_other": "{count} de {total} elementos no tienen archivo en los zip añadidos. Si añadiste todas las partes, no están en la propia exportación.",
+    "import_without_count_one": "Importar sin este elemento",
+    "import_without_count_other": "Importar sin estos {count}"
   },
   "settings": {
     "title": "Ajustes",
@@ -503,7 +507,9 @@
     "internal": "Algo ha salido mal.",
     "network": "No hay conexión con el servidor.",
     "not_found": "Esta página no existe.",
-    "go_home": "Ir a Hoy"
+    "go_home": "Ir a Hoy",
+    "page_failed": "No se pudo mostrar esta página.",
+    "reload": "Recargar"
   },
   "guide": {
     "facebook": {

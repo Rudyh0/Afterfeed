@@ -413,7 +413,11 @@
     "count_of": "{done} van {total}",
     "reconnecting": "Geen verbinding met de server. Opnieuw proberen…",
     "upload_broken": "Geen compleet zip-bestand. Download dit deel opnieuw, verwijder het hier en voeg het nieuwe bestand toe.",
-    "error_not_zip_named": "“{name}” is geen compleet zip-bestand. Download dit deel opnieuw en voeg het toe op het uploadscherm; de andere delen blijven staan."
+    "error_not_zip_named": "“{name}” is geen compleet zip-bestand. Download dit deel opnieuw en voeg het toe op het uploadscherm; de andere delen blijven staan.",
+    "missing_few_body_one": "Voor {count} van de {total} items zit geen bestand in de toegevoegde zip-bestanden. Heb je alle delen toegevoegd, dan zit het niet in de export zelf.",
+    "missing_few_body_other": "Voor {count} van de {total} items zit geen bestand in de toegevoegde zip-bestanden. Heb je alle delen toegevoegd, dan zitten ze niet in de export zelf.",
+    "import_without_count_one": "Importeren zonder dit item",
+    "import_without_count_other": "Importeren zonder deze {count}"
   },
   "settings": {
     "title": "Instellingen",
@@ -503,7 +507,9 @@
     "internal": "Er ging iets mis.",
     "network": "Geen verbinding met de server.",
     "not_found": "Deze pagina bestaat niet.",
-    "go_home": "Naar Vandaag"
+    "go_home": "Naar Vandaag",
+    "page_failed": "Deze pagina kon niet worden getoond.",
+    "reload": "Opnieuw laden"
   },
   "guide": {
     "facebook": {

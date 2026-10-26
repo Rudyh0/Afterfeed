@@ -149,23 +149,37 @@
                 done={splashCounts.done} total={splashCounts.total} {offline} {busy}
                 oncancel={() => act(() => del(`/imports/${id}`))} />
 {:else if st.status === 'needs_parts'}
-  <Step title={t('takein.missing_title')} body={t('takein.missing_body', { count: st.check?.missing ?? 0 })}>
-    {#if st.check?.missing_examples?.length}
+  {@const c = st.check}
+  {@const missing = c?.missing ?? 0}
+  {@const present = (c?.photos ?? 0) + (c?.videos ?? 0) + (c?.files ?? 0)}
+  <!-- When nearly everything is there, the missing files are most likely
+       not in the export at all, so importing without them comes first. -->
+  {@const few = missing <= Math.max(20, Math.round(present * 0.02))}
+  <Step title={t('takein.missing_title')}
+        body={few ? t('takein.missing_few_body', { count: missing, total: formatNumber(missing + present) }) : t('takein.missing_body', { count: missing })}>
+    {#if c?.missing_examples?.length}
       <details class="card details">
         <summary>{t('takein.missing_examples')}</summary>
         <ul>
-          {#each st.check.missing_examples.slice(0, 20) as ref (ref)}<li><code>{ref}</code></li>{/each}
+          {#each c.missing_examples.slice(0, 20) as ref, i (i)}<li><code>{ref}</code></li>{/each}
         </ul>
       </details>
     {/if}
-    {#if st.check}{@render found(st.check)}{/if}
+    {#if c}{@render found(c)}{/if}
     {#if actionError}<p class="error-text" role="alert">{actionError}</p>{/if}
 
     {#snippet footer()}
-      <button class="btn btn-lg" type="button" disabled={busy} onclick={() => act(() => post(`/imports/${id}/continue`))}>
-        {t('takein.import_without')}
-      </button>
-      <a class="btn btn-primary btn-lg" href={`/take-in/source/${st!.platform}/upload?import=${id}`}>{t('takein.add_files')}</a>
+      {#if few}
+        <a class="btn btn-lg" href={`/take-in/source/${st!.platform}/upload?import=${id}`}>{t('takein.add_files')}</a>
+        <button class="btn btn-primary btn-lg" type="button" disabled={busy} onclick={() => act(() => post(`/imports/${id}/continue`))}>
+          {t('takein.import_without_count', { count: missing })}
+        </button>
+      {:else}
+        <button class="btn btn-lg" type="button" disabled={busy} onclick={() => act(() => post(`/imports/${id}/continue`))}>
+          {t('takein.import_without')}
+        </button>
+        <a class="btn btn-primary btn-lg" href={`/take-in/source/${st!.platform}/upload?import=${id}`}>{t('takein.add_files')}</a>
+      {/if}
     {/snippet}
   </Step>
 {:else if st.status === 'failed' || st.status === 'cancelled'}
@@ -228,7 +242,7 @@
       <details class="card details">
         <summary>{t('takein.report_missing', { count: r.missing })}</summary>
         <ul>
-          {#each (r.missing_examples ?? []).slice(0, 20) as ref (ref)}<li><code>{ref}</code></li>{/each}
+          {#each (r.missing_examples ?? []).slice(0, 20) as ref, i (i)}<li><code>{ref}</code></li>{/each}
         </ul>
       </details>
     {/if}

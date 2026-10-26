@@ -413,7 +413,11 @@
     "count_of": "{done} sur {total}",
     "reconnecting": "Pas de connexion au serveur. Nouvelle tentative…",
     "upload_broken": "Fichier zip incomplet. Téléchargez à nouveau cette partie, retirez-la ici et ajoutez le nouveau fichier.",
-    "error_not_zip_named": "« {name} » n’est pas un fichier zip complet. Téléchargez à nouveau cette partie et ajoutez-la sur l’écran d’envoi ; les autres parties sont conservées."
+    "error_not_zip_named": "« {name} » n’est pas un fichier zip complet. Téléchargez à nouveau cette partie et ajoutez-la sur l’écran d’envoi ; les autres parties sont conservées.",
+    "missing_few_body_one": "{count} élément sur {total} n’a pas de fichier dans les zip ajoutés. Si vous avez ajouté toutes les parties, il ne figure pas dans l’export lui-même.",
+    "missing_few_body_other": "{count} éléments sur {total} n’ont pas de fichier dans les zip ajoutés. Si vous avez ajouté toutes les parties, ils ne figurent pas dans l’export lui-même.",
+    "import_without_count_one": "Importer sans cet élément",
+    "import_without_count_other": "Importer sans ces {count}"
   },
   "settings": {
     "title": "Réglages",
@@ -503,7 +507,9 @@
     "internal": "Une erreur s’est produite.",
     "network": "Pas de connexion au serveur.",
     "not_found": "Cette page n’existe pas.",
-    "go_home": "Aller à Aujourd’hui"
+    "go_home": "Aller à Aujourd’hui",
+    "page_failed": "Cette page n’a pas pu être affichée.",
+    "reload": "Recharger"
   },
   "guide": {
     "facebook": {

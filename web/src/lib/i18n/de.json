@@ -413,7 +413,11 @@
     "count_of": "{done} von {total}",
     "reconnecting": "Keine Verbindung zum Server. Neuer Versuch …",
     "upload_broken": "Keine vollständige ZIP-Datei. Lade diesen Teil erneut herunter, entferne ihn hier und füge die neue Datei hinzu.",
-    "error_not_zip_named": "„{name}“ ist keine vollständige ZIP-Datei. Lade diesen Teil erneut herunter und füge ihn beim Hochladen hinzu; die anderen Teile bleiben erhalten."
+    "error_not_zip_named": "„{name}“ ist keine vollständige ZIP-Datei. Lade diesen Teil erneut herunter und füge ihn beim Hochladen hinzu; die anderen Teile bleiben erhalten.",
+    "missing_few_body_one": "Für {count} von {total} Einträgen ist keine Datei in den hinzugefügten ZIP-Dateien. Wenn du alle Teile hinzugefügt hast, fehlt sie im Export selbst.",
+    "missing_few_body_other": "Für {count} von {total} Einträgen sind keine Dateien in den hinzugefügten ZIP-Dateien. Wenn du alle Teile hinzugefügt hast, fehlen sie im Export selbst.",
+    "import_without_count_one": "Ohne diesen Eintrag importieren",
+    "import_without_count_other": "Ohne diese {count} importieren"
   },
   "settings": {
     "title": "Einstellungen",
@@ -503,7 +507,9 @@
     "internal": "Etwas ist schiefgelaufen.",
     "network": "Keine Verbindung zum Server.",
     "not_found": "Diese Seite gibt es nicht.",
-    "go_home": "Zu Heute"
+    "go_home": "Zu Heute",
+    "page_failed": "Diese Seite konnte nicht angezeigt werden.",
+    "reload": "Neu laden"
   },
   "guide": {
     "facebook": {

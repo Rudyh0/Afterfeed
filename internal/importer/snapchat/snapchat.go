@@ -382,9 +382,10 @@ func readMemories(tree *archive.Tree, sink importer.Sink) error {
 		if e.lat != nil {
 			mem.Place = &library.Place{Lat: e.lat, Lon: e.lon}
 		}
-		ref := "memories/" + e.at.Format("2006-01-02")
+		// Without an id, the time and type say which memory it is.
+		ref := "memories/" + e.at.Format("2006-01-02") + " " + e.at.Format("15:04:05") + " UTC (" + string(e.kind) + ")"
 		if len(e.ids) > 0 {
-			ref += "_" + e.ids[len(e.ids)-1]
+			ref = "memories/" + e.at.Format("2006-01-02") + "_" + e.ids[len(e.ids)-1]
 		}
 		mem.Media = []importer.Media{{Ref: ref}}
 		sink.Memory(mem)
