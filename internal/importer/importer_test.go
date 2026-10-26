@@ -469,3 +469,127 @@ func TestBrokenUpload(t *testing.T) {
 		t.Fatalf("good upload not reused: %+v %v", reused, err)
 	}
 }
+
+// A post can list the same photo twice, and two photos in one post can
+// have the same file name in different folders. Neither stops the import.
+func TestSamePhotoTwiceInPost(t *testing.T) {
+	e := newEnv(t)
+	ctx := context.Background()
+	photo := func(uri string) map[string]any {
+		return map[string]any{"media": map[string]any{"uri": uri, "creation_timestamp": 1600000000}}
+	}
+	posts := []any{
+		map[string]any{
+			"timestamp": 1600000000,
+			"attachments": []any{
+				map[string]any{"data": []any{photo("your_facebook_activity/posts/media/Profile/7001.jpg")}},
+				map[string]any{"data": []any{photo("your_facebook_activity/posts/media/Profile/7001.jpg")}},
+			},
+			"data": []any{map[string]any{"post": "Nieuwe profielfoto"}},
+		},
+		map[string]any{
+			"timestamp": 1600100000,
+			"attachments": []any{map[string]any{"data": []any{
+				photo("your_facebook_activity/posts/media/A/7002.jpg"),
+				photo("your_facebook_activity/posts/media/B/7002.jpg"),
+			}}},
+		},
+	}
+	zipPath := filepath.Join(e.cfg.ImportDir, "facebook-rudy-2026-10-26.zip")
+	writeZip(t, zipPath, map[string]string{
+		"your_facebook_activity/posts/your_posts__check_ins__photos_and_videos_1.json": js(posts),
+		"your_facebook_activity/posts/media/Profile/7001.jpg":                          jpeg + "profile",
+		"your_facebook_activity/posts/media/A/7002.jpg":                                jpeg + "a",
+		"your_facebook_activity/posts/media/B/7002.jpg":                                jpeg + "b",
+	})
+	id, err := e.m.Create(ctx, "facebook", []importer.FileRef{{Kind: "folder", Path: filepath.Base(zipPath)}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	e.wait(t, id, importer.StatusDone)
+	if n := e.count(t, `SELECT COUNT(*) FROM media md JOIN memories m ON m.id = md.memory_id WHERE m.text = 'Nieuwe profielfoto'`); n != 1 {
+		t.Errorf("post with the same photo twice has %d media, want 1", n)
+	}
+	if n := e.count(t, `SELECT COUNT(*) FROM media`); n != 3 {
+		t.Errorf("%d media, want 3", n)
+	}
+
+	// An import with 0.1.6 stopped here after saving the photo twice in
+	// memory.json, before indexing. Importing again cleans that up.
+	var rel string
+	e.st.R.QueryRow(`SELECT path FROM memories WHERE text = 'Nieuwe profielfoto'`).Scan(&rel)
+	mem, err := e.lib.LoadMemory(rel)
+	if err != nil {
+		t.Fatal(err)
+	}
+	dup := mem.Media[0]
+	dup.File = "02.jpg"
+	os.WriteFile(filepath.Join(e.lib.MemoryDir(rel), "02.jpg"), []byte(jpeg+"profile"), 0o640)
+	mem.Media = append(mem.Media, dup)
+	if err := e.lib.SaveMemory(rel, mem); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := e.st.W.Exec(`DELETE FROM memories`); err != nil {
+		t.Fatal(err)
+	}
+	id, err = e.m.Create(ctx, "facebook", []importer.FileRef{{Kind: "folder", Path: filepath.Base(zipPath)}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	e.wait(t, id, importer.StatusDone)
+	if mem, _ = e.lib.LoadMemory(rel); len(mem.Media) != 1 {
+		t.Errorf("memory.json has %d media after importing again, want 1", len(mem.Media))
+	}
+	if _, err := os.Stat(filepath.Join(e.lib.MemoryDir(rel), "02.jpg")); !os.IsNotExist(err) {
+		t.Error("the copy of the photo is still there")
+	}
+	if n := e.count(t, `SELECT COUNT(*) FROM media`); n != 3 {
+		t.Errorf("%d media after importing again, want 3", n)
+	}
+}
+
+// Removing a source forgets its imports; its uploaded export files are
+// kept for importing again, or deleted when asked.
+func TestForgetSource(t *testing.T) {
+	e := newEnv(t)
+	ctx := context.Background()
+	now := "2026-10-26T19:00:00Z"
+	for _, q := range []string{
+		`INSERT INTO imports (id, platform, status, created_at, updated_at) VALUES (40, 'facebook', 'done', '` + now + `', '` + now + `')`,
+		`INSERT INTO imports (id, platform, status, created_at, updated_at) VALUES (41, 'instagram', 'done', '` + now + `', '` + now + `')`,
+		`INSERT INTO uploads (id, name, size, platform, status, import_id, created_at, updated_at)
+			VALUES ('aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', 'facebook.zip', 5, 'facebook', 'complete', 40, '` + now + `', '` + now + `')`,
+		`INSERT INTO uploads (id, name, size, platform, status, import_id, created_at, updated_at)
+			VALUES ('bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', 'instagram.zip', 5, 'instagram', 'complete', 41, '` + now + `', '` + now + `')`,
+	} {
+		if _, err := e.st.W.Exec(q); err != nil {
+			t.Fatal(err)
+		}
+	}
+	file := filepath.Join(e.cfg.StagingDir(), "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.upload")
+	os.MkdirAll(filepath.Dir(file), 0o750)
+	if err := os.WriteFile(file, []byte("zip.."), 0o640); err != nil {
+		t.Fatal(err)
+	}
+	if n, size, _ := e.m.SourceUploads(ctx, "facebook"); n != 1 || size != 5 {
+		t.Errorf("uploads = %d, %d", n, size)
+	}
+	if err := e.m.ForgetSource(ctx, "facebook", false); err != nil {
+		t.Fatal(err)
+	}
+	if n := e.count(t, `SELECT COUNT(*) FROM imports`); n != 1 {
+		t.Errorf("%d imports left, want 1", n)
+	}
+	if list, _ := e.m.ListUploads(ctx, "facebook"); len(list) != 1 {
+		t.Errorf("the kept upload is not offered again: %v", list)
+	}
+	if err := e.m.ForgetSource(ctx, "facebook", true); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(file); !os.IsNotExist(err) {
+		t.Error("the upload file is still there")
+	}
+	if n := e.count(t, `SELECT COUNT(*) FROM uploads`); n != 1 {
+		t.Errorf("%d uploads left, want the Instagram one", n)
+	}
+}

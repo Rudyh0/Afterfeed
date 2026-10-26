@@ -293,3 +293,49 @@ func checkZip(p string) error {
 	}
 	return zr.Close()
 }
+
+// Running reports whether an import is queued or running.
+func (m *Manager) Running(ctx context.Context) bool {
+	var n int
+	m.st.R.QueryRowContext(ctx, `SELECT COUNT(*) FROM imports WHERE status IN (?, ?)`, StatusQueued, StatusRunning).Scan(&n)
+	return n > 0 || m.importRunning()
+}
+
+// SourceUploads returns how many uploaded export files belong to a
+// platform, and their size.
+func (m *Manager) SourceUploads(ctx context.Context, platform string) (n int, size int64, err error) {
+	err = m.st.R.QueryRowContext(ctx, `SELECT COUNT(*), COALESCE(SUM(size), 0) FROM uploads
+		WHERE platform = ? OR import_id IN (SELECT id FROM imports WHERE platform = ?)`, platform, platform).Scan(&n, &size)
+	return n, size, err
+}
+
+// ForgetSource removes the import history of a platform whose content was
+// removed. Its uploaded export files are deleted, or kept so they can be
+// imported again without uploading.
+func (m *Manager) ForgetSource(ctx context.Context, platform string, deleteUploads bool) error {
+	ids, err := m.st.R.QueryContext(ctx, `SELECT id FROM uploads
+		WHERE platform = ? OR import_id IN (SELECT id FROM imports WHERE platform = ?)`, platform, platform)
+	if err != nil {
+		return err
+	}
+	var uploads []string
+	for ids.Next() {
+		var id string
+		if ids.Scan(&id) == nil {
+			uploads = append(uploads, id)
+		}
+	}
+	ids.Close()
+	for _, id := range uploads {
+		if deleteUploads {
+			if err := m.DeleteUpload(ctx, id); err != nil {
+				return err
+			}
+		} else if _, err := m.st.W.ExecContext(ctx, `UPDATE uploads SET import_id = NULL WHERE id = ?`, id); err != nil {
+			return err
+		}
+	}
+	_, err = m.st.W.ExecContext(ctx, `DELETE FROM imports WHERE platform = ? AND status NOT IN (?, ?)`,
+		platform, StatusQueued, StatusRunning)
+	return err
+}

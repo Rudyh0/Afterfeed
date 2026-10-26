@@ -47,3 +47,18 @@ Then [keep the original export files](./keep-your-exports) somewhere other than 
 ## Importing again
 
 You can import the same export again, or a newer export of the same account. Afterfeed adds only what is new. Changes you made in the metadata editor are kept.
+
+## Removing a source
+
+To take a platform out of Afterfeed, for example to start over with a newer export, go to **Settings › Sources** and choose **Remove** next to it. Afterfeed shows what will go and asks for your password.
+
+Removing a source deletes:
+
+- its memories and conversations, also those in the vault;
+- their photos, videos and files in your data folder;
+- changes you made to them in the metadata editor;
+- its import history.
+
+The uploaded export files are kept, so you can import the source again without uploading. Tick **Also delete the uploaded export files** to remove them too. Export files you put in the import folder yourself are never touched.
+
+This cannot be undone. Your own memories, made in Afterfeed, are not a source and stay; delete those one by one.

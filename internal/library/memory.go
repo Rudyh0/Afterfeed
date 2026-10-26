@@ -350,7 +350,8 @@ func (l *Library) IndexMemory(ctx context.Context, tx *sql.Tx, rel string, m *Me
 		_, err := tx.ExecContext(ctx, `INSERT INTO media (
 				id, memory_id, position, media_key, kind, file, overlay, text, mime,
 				width, height, duration, size, sha256, taken_at, lat, lon, ocr_text, ocr_version)
-			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+			ON CONFLICT(id) DO NOTHING`,
 			md.ID, m.ID, i, md.Key, md.Kind, md.File, md.Overlay, md.Text, md.Mime,
 			md.Width, md.Height, md.Duration, md.Size, md.SHA256, taken, md.Lat, md.Lon, md.OCR, md.OCRVersion)
 		if err != nil {

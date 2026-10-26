@@ -5,7 +5,8 @@
   import TwoFactor from '../components/TwoFactor.svelte'
   import { ApiError, get, patch, post } from '../lib/api'
   import { errorMessage } from '../lib/errors'
-  import { formatShortDate, locale, localeNames, locales, setLocale, t, type Locale } from '../lib/i18n/index.svelte'
+  import { formatBytes, formatShortDate, locale, localeNames, locales, setLocale, t, type Locale } from '../lib/i18n/index.svelte'
+  import { loadLibrary } from '../lib/library.svelte'
   import { navigate, type Params } from '../lib/router.svelte'
   import { session } from '../lib/session.svelte'
   import { hideSplash } from '../lib/splash'
@@ -35,6 +36,25 @@
   }
 
   let imports = $state<ImportSummary[] | null>(null)
+
+  interface SourceInfo {
+    platform: string
+    first_year?: number
+    last_year?: number
+    memories: number
+    conversations: number
+    uploads: number
+    uploads_size: number
+    removable: boolean
+  }
+  let sources = $state<SourceInfo[] | null>(null)
+  let removing = $state<SourceInfo | null>(null)
+  let removeOpen = $state(false)
+  let removePassword = $state('')
+  let removeUploads = $state(false)
+  let removeError = $state('')
+  let removeBusy = $state(false)
+  let removedMessage = $state('')
   let pinSet = $state<boolean | null>(null)
   let pinOpen = $state(false)
   let pinCurrent = $state('')
@@ -59,6 +79,7 @@
       autolock = settings.vault.autolock_minutes
       pinSet = (await get<{ pin_set: boolean }>('/vault')).pin_set
       imports = (await get<{ imports: ImportSummary[] }>('/imports')).imports
+      sources = (await get<{ sources: SourceInfo[] }>('/sources')).sources
     } finally {
       hideSplash()
     }
@@ -126,6 +147,49 @@
         return t('settings.import_cancelled')
       default:
         return t(`takein.phase.${i.phase || 'queued'}`)
+    }
+  }
+
+  function platformName(p: string): string {
+    return p === 'afterfeed' ? t('nav.own_memories') : t(`platform.${p}`)
+  }
+
+  // "596 memories and 318 conversations"
+  function sourceItems(s: SourceInfo): string {
+    const parts: string[] = []
+    if (s.memories) parts.push(t('count.memories', { count: s.memories }))
+    if (s.conversations) parts.push(t('count.conversations', { count: s.conversations }))
+    return parts.join(` ${t('common.and')} `)
+  }
+
+  function openRemove(s: SourceInfo) {
+    removing = s
+    removePassword = ''
+    removeUploads = false
+    removeError = ''
+    removedMessage = ''
+    removeOpen = true
+  }
+
+  async function removeSource(e: SubmitEvent) {
+    e.preventDefault()
+    if (!removing) return
+    removeBusy = true
+    removeError = ''
+    const name = platformName(removing.platform)
+    try {
+      await post(`/sources/${removing.platform}/remove`, { password: removePassword, delete_uploads: removeUploads })
+      removeOpen = false
+      removePassword = ''
+      removedMessage = t('settings.source_removed', { platform: name })
+      sources = (await get<{ sources: SourceInfo[] }>('/sources')).sources
+      imports = (await get<{ imports: ImportSummary[] }>('/imports')).imports
+      loadLibrary()
+    } catch (err) {
+      removeError =
+        err instanceof ApiError && err.code === 'auth.invalid_credentials' ? t('auth.wrong_password') : errorMessage(err)
+    } finally {
+      removeBusy = false
     }
   }
 
@@ -311,6 +375,24 @@
 
   <section id="sources" class="card section" aria-labelledby="h-sources">
     <h2 id="h-sources">{t('settings.sources')}</h2>
+    {#if sources && sources.length > 0}
+      <p class="label">{t('settings.in_archive')}</p>
+      <ul class="imports">
+        {#each sources as src (src.platform)}
+          <li class="source">
+            <span class="import-text">
+              <span class="import-title">{platformName(src.platform)}{#if src.first_year}<span class="sub tabular">{src.first_year === src.last_year ? src.first_year : `${src.first_year}–${src.last_year}`}</span>{/if}</span>
+              <span class="sub">{sourceItems(src)}</span>
+            </span>
+            {#if src.removable}
+              <button class="btn btn-danger" type="button" aria-label={t('settings.remove_source', { platform: platformName(src.platform) })}
+                      onclick={() => openRemove(src)}><Icon name="trash" size={18} />{t('common.remove')}</button>
+            {/if}
+          </li>
+        {/each}
+      </ul>
+    {/if}
+    {#if removedMessage}<p class="ok" role="status">{removedMessage}</p>{/if}
     {#if imports && imports.length > 0}
       <p class="label">{t('settings.import_history')}</p>
       <ul class="imports">
@@ -333,6 +415,33 @@
       <a class="btn" href="/take-in/sources"><Icon name="plus" size={18} />{t('nav.add_source')}</a>
     </div>
   </section>
+
+  <Dialog open={removeOpen} title={removing ? t('settings.remove_title', { platform: platformName(removing.platform) }) : ''}
+          onclose={() => { if (!removeBusy) removeOpen = false }} width={480}>
+    {#if removing}
+      <form id="remove-form" class="pin-form" onsubmit={removeSource}>
+        <p>{t('settings.remove_body', { items: sourceItems(removing) })}</p>
+        <p class="sub">{t('settings.remove_again')}</p>
+        {#if removing.uploads > 0}
+          <div class="check-field">
+            <label class="check"><input type="checkbox" bind:checked={removeUploads} />{t('settings.remove_uploads', { size: formatBytes(removing.uploads_size) })}</label>
+            <p class="hint">{t('settings.remove_uploads_hint')}</p>
+          </div>
+        {/if}
+        <div class="field">
+          <label for="remove-password">{t('settings.your_password')}</label>
+          <input id="remove-password" class="input" type="password" autocomplete="current-password" bind:value={removePassword} />
+        </div>
+        {#if removeError}<p class="error-text" role="alert">{removeError}</p>{/if}
+      </form>
+    {/if}
+    {#snippet footer()}
+      <button class="btn" type="button" disabled={removeBusy} onclick={() => (removeOpen = false)}>{t('common.cancel')}</button>
+      <button class="btn btn-primary danger-fill" type="submit" form="remove-form" disabled={removeBusy || !removePassword}>
+        {removeBusy ? t('settings.removing') : removing ? t('settings.remove_source', { platform: platformName(removing.platform) }) : ''}
+      </button>
+    {/snippet}
+  </Dialog>
 
   <section id="about" class="card section" aria-labelledby="h-about">
     <h2 id="h-about">{t('settings.about')}</h2>
@@ -492,6 +601,45 @@
 
   .attention {
     color: var(--danger);
+  }
+
+  .source {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 0;
+  }
+
+  .check-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .check {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 14px;
+    line-height: 1.4;
+  }
+
+  .check input {
+    flex: 0 0 auto;
+    width: 18px;
+    height: 18px;
+    margin-top: 1px;
+    accent-color: var(--ink);
+  }
+
+  .check-field .hint {
+    padding-left: 28px;
+  }
+
+  .danger-fill {
+    border-color: var(--danger);
+    background: var(--danger);
+    color: #fff;
   }
 
   @media (max-width: 600px) {

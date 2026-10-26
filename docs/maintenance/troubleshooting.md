@@ -54,6 +54,10 @@ When Afterfeed restarts during an import, the import starts again by itself. Eve
 
 The report lists files Afterfeed could not read, for example damaged photos or a format it does not know. The rest of the import continues. If many files are affected, or a whole year is missing, [open an issue](https://github.com/Rudyh0/Afterfeed/issues) and describe the structure of the export, without attaching personal data.
 
+## An import stops with "UNIQUE constraint failed: media.id"
+
+Afterfeed 0.1.6 and older stopped when a Facebook post listed the same photo twice, for example a new profile picture. Update to 0.1.7 or newer, open the import under **Settings › Sources › Import history** and choose **Retry**. The uploaded export file is used again and what was already copied is recognised.
+
 ## Photos show the wrong date
 
 Some platforms store the upload date instead of the date the photo was taken. Fix it with the [metadata editor](/guide/metadata), for one photo or a whole selection.

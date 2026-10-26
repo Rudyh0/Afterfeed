@@ -167,14 +167,18 @@ func (r *reader) post(p *post, source, kind string) *importer.Memory {
 		}
 	}
 	var lifeEvent string
+	// A post can list the same photo more than once, for example a new
+	// profile picture.
+	inPost := map[string]bool{}
 	for _, a := range p.Attachments {
 		for _, d := range a.Data {
 			switch {
 			case d.Media != nil:
 				md := d.Media.Media(r.tree)
-				if md.Ref == "" {
+				if md.Ref == "" || inPost[md.Ref] {
 					continue
 				}
+				inPost[md.Ref] = true
 				r.seen[d.Media.Key()] = true
 				if md.Text != "" && len(texts) == 0 && len(m.Media) == 0 {
 					// A photo posted with a caption: the caption is the post text.

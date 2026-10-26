@@ -217,10 +217,27 @@ func (s *storeSink) storeMemory(im *Memory) error {
 		return err
 	}
 	dir := s.m.lib.MemoryDir(rel)
+	// Every medium of a memory needs its own key. The same file listed
+	// twice is copied once; another file with the same name gets a number.
+	used := map[string]string{}
 	for _, md := range im.Media {
 		if md.File == nil {
 			continue
 		}
+		key := md.key()
+		if path, ok := used[key]; ok {
+			if path == md.File.Path {
+				continue
+			}
+			for n := 2; ; n++ {
+				if _, ok := used[fmt.Sprintf("%s#%d", key, n)]; !ok {
+					key = fmt.Sprintf("%s#%d", key, n)
+					break
+				}
+			}
+			md.Key = key
+		}
+		used[key] = md.File.Path
 		lm, err := s.copyMedia(dir, len(mem.Media)+1, mem.ID, &md)
 		if err != nil {
 			if s.ctx.Err() != nil {
@@ -282,12 +299,23 @@ func (s *storeSink) mergeMemory(rel string, im *Memory, index bool) error {
 	if err != nil {
 		return &problemError{rel, err}
 	}
-	have := map[string]bool{}
-	for _, md := range mem.Media {
-		have[md.Key] = true
-	}
 	dir := s.m.lib.MemoryDir(rel)
+	// Before 0.1.7 a memory could get the same medium twice, which stopped
+	// the import. The copy is removed.
+	have := map[string]bool{}
 	added := 0
+	cleaned := false
+	kept := mem.Media[:0]
+	for _, md := range mem.Media {
+		if have[md.Key] {
+			os.Remove(filepath.Join(dir, md.File))
+			cleaned = true
+			continue
+		}
+		have[md.Key] = true
+		kept = append(kept, md)
+	}
+	mem.Media = kept
 	for _, md := range im.Media {
 		if md.File == nil || have[md.key()] {
 			continue
@@ -325,11 +353,11 @@ func (s *storeSink) mergeMemory(rel string, im *Memory, index bool) error {
 		}
 	}
 	s.mu.Unlock()
-	if added == 0 && !index {
+	if added == 0 && !index && !cleaned {
 		s.tick()
 		return nil
 	}
-	if added > 0 {
+	if added > 0 || cleaned {
 		mem.UpdatedAt = time.Now().UTC()
 		if err := s.m.lib.SaveMemory(rel, mem); err != nil {
 			return err

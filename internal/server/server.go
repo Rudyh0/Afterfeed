@@ -93,6 +93,7 @@ func (s *Server) routes() {
 	s.editRoutes()
 	s.mapRoutes()
 	s.vaultRoutes()
+	s.sourceRoutes()
 	s.conversationRoutes()
 
 	m.HandleFunc("/api/", func(w http.ResponseWriter, r *http.Request) {

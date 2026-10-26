@@ -9,6 +9,7 @@ const messages: Record<string, string> = {
   not_found: 'error.not_found',
   'vault.wrong_pin': 'vault.wrong_pin',
   'vault.invalid_pin': 'vault.pin_digits',
+  'source.import_running': 'settings.remove_import_running',
 }
 
 export function errorMessage(err: unknown): string {

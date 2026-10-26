@@ -2,6 +2,8 @@ package importer
 
 import (
 	"context"
+	"errors"
+	"io/fs"
 	"log/slog"
 	"path/filepath"
 	"sync"
@@ -149,6 +151,10 @@ func (m *Manager) previewsWaiting() bool { return len(m.previewWake) > 0 }
 // memory.json and in the index. It returns how many had text.
 func (m *Manager) readMemoryText(ctx context.Context, j textJob, failures *atomic.Int64) (int, error) {
 	mem, err := m.lib.LoadMemory(j.rel)
+	if errors.Is(err, fs.ErrNotExist) {
+		// Removed meanwhile, for example with its source.
+		return 0, nil
+	}
 	if err != nil {
 		return 0, err
 	}
@@ -193,6 +199,9 @@ func (m *Manager) readMemoryText(ctx context.Context, j textJob, failures *atomi
 func (m *Manager) saveText(ctx context.Context, j textJob, texts map[string]string) error {
 	defer m.lib.LockMemory(j.rel)()
 	mem, err := m.lib.LoadMemory(j.rel)
+	if errors.Is(err, fs.ErrNotExist) {
+		return nil
+	}
 	if err != nil {
 		return err
 	}
